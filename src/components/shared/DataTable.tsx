@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronsLeft, ChevronsRight, Inbox, Search } from 'lucide-react'
 
 type Column<T> = {
   key: keyof T & string
@@ -86,19 +87,28 @@ export default function DataTable<T extends Record<string, any>>({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_20px_rgba(15,23,42,0.05)]">
+      <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-slate-900">Daftar Data</div>
-          <div className="text-xs text-slate-500">{loading ? 'Memuat data...' : `${sorted.length} baris ditemukan`}</div>
+          <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-900">Daftar Data</div>
+          <div className="mt-1 text-sm text-slate-500">{loading ? 'Memuat data...' : `${sorted.length} baris ditemukan`}</div>
         </div>
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={searchPlaceholder}
-          disabled={loading}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-teal-400 sm:w-80 disabled:cursor-not-allowed disabled:opacity-50"
-        />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <label htmlFor="datatable-search" className="sr-only">Cari</label>
+          <div className="relative w-full sm:w-80">
+            <input
+              id="datatable-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={searchPlaceholder}
+              disabled={loading}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-10 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+              <Search size={16} />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -108,40 +118,46 @@ export default function DataTable<T extends Record<string, any>>({
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 ${
+                  className={`whitespace-nowrap px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 ${
                     column.sortable ? 'cursor-pointer select-none hover:text-teal-700' : ''
                   }`}
                   onClick={() => toggleSort(column)}
                 >
-                  <span className="inline-flex items-center gap-1">
+                  <div className="inline-flex items-center gap-2">
                     {column.title}
-                    {column.sortable && sortKey === column.key && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
-                  </span>
+                    {column.sortable && (
+                      <span className="text-slate-400">
+                        {sortKey === column.key ? (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />) : <ArrowUpDown size={14} />}
+                      </span>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
             {loading ? (
-              Array.from({ length: 4 }).map((_, index) => (
+              Array.from({ length: pageSize }).map((_, index) => (
                 <tr key={index} className="animate-pulse">
                   {columns.map((column) => (
-                    <td key={column.key} className="px-4 py-5 text-sm text-slate-700">
-                      <div className="h-4 w-full rounded bg-slate-200" />
+                    <td key={column.key} className="px-5 py-5 text-sm text-slate-700">
+                      <div className="h-4 w-full rounded-full bg-slate-200" />
                     </td>
                   ))}
                 </tr>
               ))
             ) : visibleRows.length === 0 ? (
               <tr>
-                <td className="px-4 py-12 text-center text-sm text-slate-500" colSpan={columns.length}>
-                  <div className="space-y-3">
-                    {emptyState ? emptyState : <div>Tidak ada data yang cocok.</div>}
+                <td className="px-5 py-16 text-center text-sm text-slate-500" colSpan={columns.length}>
+                  <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                    <Inbox size={32} className="text-teal-600" />
+                    {emptyState ? emptyState : <div className="text-sm font-semibold text-slate-900">Belum ada data untuk ditampilkan.</div>}
+                    <p className="text-sm text-slate-500">Coba kata kunci lain, segarkan data, atau tambahkan item baru untuk melihat tampilan di sini.</p>
                     {emptyAction ? (
                       <button
                         type="button"
                         onClick={emptyAction.onClick}
-                        className="mx-auto mt-3 inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                        className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
                       >
                         {emptyAction.label}
                       </button>
@@ -151,9 +167,9 @@ export default function DataTable<T extends Record<string, any>>({
               </tr>
             ) : (
               visibleRows.map((row, index) => (
-                <tr key={index} className="transition hover:bg-teal-50/60">
+                <tr key={index} className="transition hover:bg-teal-50/50">
                   {columns.map((column) => (
-                    <td key={column.key} className="px-4 py-3 text-sm text-slate-700">
+                    <td key={column.key} className="px-5 py-4 text-sm text-slate-700">
                       {column.render ? column.render(row) : normalizeValue(row[column.key])}
                     </td>
                   ))}
@@ -164,26 +180,26 @@ export default function DataTable<T extends Record<string, any>>({
         </table>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
+      <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <span>
-          Halaman {page} dari {totalPages}
+          Halaman <strong className="text-slate-900">{page}</strong> dari <strong className="text-slate-900">{totalPages}</strong>
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page === 1}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Sebelumnya
+            <ChevronsLeft size={16} /> Sebelumnya
           </button>
           <button
             type="button"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page === totalPages}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Berikutnya
+            Berikutnya <ChevronsRight size={16} />
           </button>
         </div>
       </div>
