@@ -1,7 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+'use client'
 
-export function useNotifikasi(userId?: string) {
-  return useQuery({
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query'
+import type { Notifikasi } from '@/types'
+
+interface NotifikasiResponse {
+  data: Notifikasi[]
+}
+
+export function useNotifikasi(userId?: string): UseQueryResult<NotifikasiResponse, Error> {
+  return useQuery<NotifikasiResponse, Error>({
     queryKey: ['notifikasi', userId],
     queryFn: async () => {
       const res = await fetch(`/api/notifikasi?userId=${userId}`)
@@ -12,9 +20,9 @@ export function useNotifikasi(userId?: string) {
   })
 }
 
-export function useMarkRead(userId?: string) {
+export function useMarkRead(userId?: string): UseMutationResult<Notifikasi, Error, string> {
   const qc = useQueryClient()
-  return useMutation({
+  return useMutation<Notifikasi, Error, string>({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/notifikasi/${id}`, {
         method: 'PATCH',

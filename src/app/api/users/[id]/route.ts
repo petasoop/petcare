@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { forbidden, getCurrentUserWithRole, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({
   name: z.string().optional(),
@@ -18,10 +19,23 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     if (!token) return unauthorized()
     if (token.role !== 'ADMIN' && getTokenUserId(token) !== params.id) return forbidden()
 
-    const user = await prisma.user.findUnique({ where: { id: params.id } })
+    const user = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
     if (!user) return notFound()
     return NextResponse.json(user)
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'users/[id]/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching user' }, { status: 500 })
   }
 }
@@ -34,7 +48,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const body = await req.json()
     const parsed = updateSchema.parse(body)
-    const data: any = { ...parsed }
+    const data = { ...parsed }
 
     if (parsed.password) {
       const salt = await bcrypt.genSalt(10)
@@ -43,8 +57,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const updated = await prisma.user.update({ where: { id: params.id }, data })
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'users/[id]/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }
 
@@ -55,7 +70,8 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     if (token.role !== 'ADMIN') return forbidden()
     await prisma.user.delete({ where: { id: params.id } })
     return NextResponse.json({ message: 'Deleted' })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'users/[id]/route.ts', functionName: 'DELETE' })
     return NextResponse.json({ message: 'Error deleting' }, { status: 500 })
   }
 }

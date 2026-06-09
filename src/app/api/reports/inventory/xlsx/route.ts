@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 export async function GET(req: Request) {
   const token = await getApiToken(req)
@@ -19,7 +20,8 @@ export async function GET(req: Request) {
     XLSX.utils.book_append_sheet(wb, ws, 'Inventory')
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' })
     return new Response(buf, { headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': 'attachment; filename="inventory.xlsx"' } })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'reports/inventory/xlsx/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error exporting xlsx' }, { status: 500 })
   }
 }

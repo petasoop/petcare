@@ -3,15 +3,15 @@ import { useQueryClient } from '@tanstack/react-query'
 
 export default function useSSE(
   userId?: string,
-  onMessage?: (payload: any) => void,
-  invalidateQueryKey?: any,
+  onMessage?: (payload: unknown) => void,
+  invalidateQueryKey?: unknown,
 ) {
   const qc = useQueryClient()
 
   useEffect(() => {
     if (!userId) return
     const es = new EventSource(`/api/konsultasi/sse?userId=${userId}`)
-    es.addEventListener('message', (e: any) => {
+    es.addEventListener('message', (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data)
         if (invalidateQueryKey) {

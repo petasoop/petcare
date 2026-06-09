@@ -1,9 +1,14 @@
 import React from 'react'
-import * as PDF from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer'
+import type { Appointment, Hewan, User } from '@/types'
 
-const { Page, Text, View, Document, StyleSheet, pdf } = PDF as any
+type AppointmentReportItem = Appointment & {
+  hewan?: { nama?: string | null }
+  pelanggan?: { name?: string | null }
+  dokter?: { name?: string | null }
+}
 
-export const generateHewanCardDocument = (hewan: any, owner: any) => {
+export const generateHewanCardDocument = (hewan: Hewan, owner: User) => {
   const styles = StyleSheet.create({
     page: { padding: 28, backgroundColor: '#f8fafc', fontFamily: 'Helvetica' },
     brand: { fontSize: 12, color: '#0f766e', letterSpacing: 1, marginBottom: 6 },
@@ -49,7 +54,17 @@ export const generateHewanCardDocument = (hewan: any, owner: any) => {
   )
 }
 
-export const generateRekamMedisDocument = (rekam: any) => {
+export const generateRekamMedisDocument = (rekam: {
+  keluhan?: string | null
+  diagnosis?: string | null
+  tindakan?: string | null
+  resep?: string | null
+  obat?: string | null
+  perawatan?: string | null
+  dosis?: string | null
+  catatanPerawatan?: string | null
+  catatanDokter?: string | null
+}) => {
   const styles = StyleSheet.create({
     page: { padding: 28, backgroundColor: '#f8fafc', fontFamily: 'Helvetica' },
     brand: { fontSize: 12, color: '#0f766e', letterSpacing: 1, marginBottom: 6 },
@@ -79,7 +94,7 @@ export const generateRekamMedisDocument = (rekam: any) => {
   )
 }
 
-export const generateAppointmentsPdfDocument = (appointments: any[]) => {
+export const generateAppointmentsPdfDocument = (appointments: AppointmentReportItem[]) => {
   const styles = StyleSheet.create({
     page: { padding: 28, backgroundColor: '#f8fafc', fontFamily: 'Helvetica' },
     brand: { fontSize: 12, color: '#0f766e', letterSpacing: 1, marginBottom: 6 },

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({
   isRead: z.boolean(),
@@ -25,7 +26,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data: { isRead: parsed.isRead },
     })
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Error updating notification' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'notifikasi/[id]/route.ts', functionName: 'PATCH' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Error updating notification' }, { status: 400 })
   }
 }

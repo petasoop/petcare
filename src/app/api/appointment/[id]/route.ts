@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({ dokterId: z.string().nullable().optional(), status: z.string().optional(), catatanAdmin: z.string().optional() })
 
@@ -20,7 +21,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (token.role === 'CLIENT' && item.pelangganId !== userId) return forbidden()
 
     return NextResponse.json(item)
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'appointment/[id]/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error' }, { status: 500 })
   }
 }
@@ -50,8 +52,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     } catch (e) {}
 
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'appointment/[id]/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }
 
@@ -69,7 +72,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     await prisma.appointment.delete({ where: { id } })
     return NextResponse.json({ message: 'Deleted' })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'appointment/[id]/route.ts', functionName: 'DELETE' })
     return NextResponse.json({ message: 'Error deleting' }, { status: 500 })
   }
 }

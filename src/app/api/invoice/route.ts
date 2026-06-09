@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const invoiceItemSchema = z.object({
   inventoryId: z.string().optional(),
@@ -17,14 +18,20 @@ const createSchema = z.object({
 })
 
 async function generateInvoiceNumber() {
-  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const randomSuffix = () => Math.floor(Math.random() * 9000 + 1000).toString()
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const invoiceNumber = `INV-${datePart}-${randomSuffix()}`
-    const existing = await prisma.invoice.findUnique({ where: { invoiceNumber } })
-    if (!existing) return invoiceNumber
-  }
-  throw new Error('Unable to generate unique invoice number')
+  const now = new Date()
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '')
+  const startOfDay = new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000Z`)
+  const endOfDay = new Date(`${now.toISOString().slice(0, 10)}T23:59:59.999Z`)
+  const countToday = await prisma.invoice.count({
+    where: {
+      createdAt: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+  })
+  const sequence = String(countToday + 1).padStart(4, '0')
+  return `INV-${datePart}-${sequence}`
 }
 
 export async function GET(req: Request) {
@@ -42,7 +49,8 @@ export async function GET(req: Request) {
     })
 
     return NextResponse.json({ data: invoices })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'invoice/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching invoices' }, { status: 500 })
   }
 }
@@ -78,7 +86,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'invoice/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

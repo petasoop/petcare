@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 export async function GET(req: Request) {
   try {
@@ -20,7 +21,8 @@ export async function GET(req: Request) {
     })
 
     return NextResponse.json({ data: movements })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'inventory/movements/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching inventory movements' }, { status: 500 })
   }
 }

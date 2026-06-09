@@ -1,16 +1,34 @@
-"use client"
+'use client'
+
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, FieldError } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { hewanSchema } from '@/lib/schemas'
+import type { HewanCreateInput, HewanUpdateInput } from '@/types'
 
-export default function HewanForm({ onSubmit, defaultValues }: { onSubmit: (data: any) => void; defaultValues?: any }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({ defaultValues, resolver: zodResolver(hewanSchema) })
+type HewanFormData = HewanCreateInput | HewanUpdateInput
+
+interface HewanFormProps {
+  onSubmit: (data: HewanFormData) => void | Promise<void>
+  defaultValues?: HewanFormData
+}
+
+function getErrorMessage(error: FieldError | undefined): string {
+  return typeof error?.message === 'string' ? error.message : ''
+}
+
+export default function HewanForm({ onSubmit, defaultValues }: HewanFormProps): React.ReactElement {
+  const { register, handleSubmit, formState: { errors } } = useForm<HewanFormData>({
+    defaultValues,
+    resolver: zodResolver(hewanSchema),
+  })
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       <div>
         <label className="block text-sm">Nama</label>
         <input {...register('nama')} className="w-full border p-2 rounded" />
+        {errors.nama && <p className="text-xs text-red-600">{getErrorMessage(errors.nama)}</p>}
       </div>
       <div>
         <label className="block text-sm">Jenis</label>
@@ -21,14 +39,17 @@ export default function HewanForm({ onSubmit, defaultValues }: { onSubmit: (data
           <option value="KELINCI">Kelinci</option>
           <option value="LAINNYA">Lainnya</option>
         </select>
+        {errors.jenis && <p className="text-xs text-red-600">{getErrorMessage(errors.jenis)}</p>}
       </div>
       <div>
         <label className="block text-sm">Ras</label>
         <input {...register('ras')} className="w-full border p-2 rounded" />
-        {errors.ras && <p className="text-xs text-red-600">{(errors.ras as any).message}</p>}
+        {errors.ras && <p className="text-xs text-red-600">{getErrorMessage(errors.ras)}</p>}
       </div>
       <div className="flex justify-end">
-        <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded">Simpan</button>
+        <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded">
+          Simpan
+        </button>
       </div>
     </form>
   )

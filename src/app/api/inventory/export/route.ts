@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 export async function GET(req: Request) {
   try {
@@ -13,7 +14,8 @@ export async function GET(req: Request) {
     const rows = items.map(i => [i.namaItem, i.kategori, String(i.stok), i.satuan, String(i.harga), String(i.stokMinimal)])
     const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')
     return new Response(csv, { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="inventory.csv"' } })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'inventory/export/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error exporting' }, { status: 500 })
   }
 }

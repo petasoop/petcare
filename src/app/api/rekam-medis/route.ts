@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const createSchema = z.object({
   appointmentId: z.string(),
@@ -60,7 +61,8 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching rekam medis' }, { status: 500 })
   }
 }
@@ -78,7 +80,8 @@ export async function POST(req: Request) {
     if (token.role === 'ADMIN' && !parsed.dokterId) return NextResponse.json({ message: 'dokterId is required' }, { status: 400 })
     const created = await prisma.rekamMedis.create({ data: { ...parsed, tanggalPeriksa: new Date(parsed.tanggalPeriksa) } })
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

@@ -54,7 +54,7 @@ export async function GET(req: Request) {
   })
 }
 
-function encodeEvent(event: { event?: string; data: any }) {
+function encodeEvent(event: { event?: string; data: unknown }) {
   const lines: string[] = []
   if (event.event) lines.push(`event: ${event.event}`)
   const payload = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)

@@ -2,6 +2,7 @@ import { getApiToken, getTokenUserId, notFound, unauthorized, forbidden } from '
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateHewanCardDocument, createPdfBufferFromDocument } from '@/lib/pdf'
+import { logError } from '@/lib/error-logging'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -18,7 +19,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const doc = generateHewanCardDocument(hewan, hewan.pelanggan)
     const buffer = await createPdfBufferFromDocument(doc)
     return new Response(buffer, { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="kartu-${hewan.nama}.pdf"` } })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'hewan/[id]/pdf/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error generating PDF' }, { status: 500 })
   }
 }

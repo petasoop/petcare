@@ -11,6 +11,7 @@ export default function RekamMedisTreatmentEditor({ record }: { record: any }) {
     perawatan: record.perawatan || '',
     dosis: record.dosis || '',
     catatanPerawatan: record.catatanPerawatan || '',
+    catatanDokter: record.catatanDokter || '',
   })
 
   const handleSave = async (e: React.FormEvent) => {
@@ -43,6 +44,10 @@ export default function RekamMedisTreatmentEditor({ record }: { record: any }) {
         <div>
           <label className="block text-sm font-medium text-slate-700">Catatan Treatment</label>
           <textarea value={form.catatanPerawatan} onChange={(e) => setForm({ ...form, catatanPerawatan: e.target.value })} className="mt-1 w-full rounded border p-2" rows={3} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Catatan Dokter</label>
+          <textarea value={form.catatanDokter} onChange={(e) => setForm({ ...form, catatanDokter: e.target.value })} className="mt-1 w-full rounded border p-2" rows={3} />
         </div>
         <button type="submit" className="rounded bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">
           Simpan Treatment

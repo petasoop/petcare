@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
+import type { ApiPaginatedResponse, AppointmentCreateInput } from '@/types'
 
 const createSchema = z.object({
   pelangganId: z.string().optional(),
@@ -9,11 +11,17 @@ const createSchema = z.object({
   dokterId: z.string().optional(),
   tanggal: z.string(),
   waktu: z.string(),
-  jenis: z.string(),
+  jenis: z.enum(['PEMERIKSAAN', 'VAKSINASI', 'BEDAH', 'GROOMING', 'DENTAL', 'RAWAT_INAP', 'TELEMEDICINE', 'HOME_VISIT']),
   keluhan: z.string().optional(),
 })
 
-export async function GET(req: Request) {
+interface AppointmentWhereClause {
+  pelangganId?: string
+  dokterId?: string
+  OR?: Array<{ dokterId: string } | { pelangganId: string }>
+}
+
+export async function GET(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -26,7 +34,7 @@ export async function GET(req: Request) {
     const pelangganId = url.searchParams.get('pelangganId')
     const dokterId = url.searchParams.get('dokterId')
     const skip = (page - 1) * limit
-    const where: any = {}
+    const where: AppointmentWhereClause = {}
 
     if (role === 'ADMIN' || role === 'STAFF') {
       if (pelangganId) where.pelangganId = pelangganId
@@ -45,13 +53,19 @@ export async function GET(req: Request) {
       prisma.appointment.findMany({ where, skip, take: limit, orderBy: { tanggal: 'desc' } }),
       prisma.appointment.count({ where }),
     ])
-    return NextResponse.json({ data, meta: { page, limit, total } })
-  } catch (err) {
+
+    const response: ApiPaginatedResponse = { data, meta: { page, limit, total } }
+    return NextResponse.json(response)
+  } catch (error) {
+    logError(error, {
+      fileName: 'appointment/route.ts',
+      functionName: 'GET',
+    })
     return NextResponse.json({ message: 'Error fetching appointments' }, { status: 500 })
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -63,10 +77,28 @@ export async function POST(req: Request) {
     if (!parsed.pelangganId || token.role === 'CLIENT') parsed.pelangganId = userId
     if (!parsed.pelangganId) return NextResponse.json({ message: 'pelangganId is required' }, { status: 400 })
     if (token.role === 'CLIENT' && parsed.pelangganId !== userId) return forbidden()
-    const appointmentData = { ...parsed, tanggal: new Date(parsed.tanggal) } as any
+
+    const appointmentData: AppointmentCreateInput = {
+      pelangganId: parsed.pelangganId,
+      hewanId: parsed.hewanId,
+      dokterId: parsed.dokterId ?? null,
+      tanggal: new Date(parsed.tanggal),
+      waktu: parsed.waktu,
+      jenis: parsed.jenis,
+      keluhan: parsed.keluhan ?? null,
+    }
+
     const created = await prisma.appointment.create({ data: appointmentData })
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, {
+      fileName: 'appointment/route.ts',
+      functionName: 'POST',
+    })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: 'Invalid input', details: error.errors }, { status: 400 })
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create appointment'
+    return NextResponse.json({ message: errorMessage }, { status: 400 })
   }
 }

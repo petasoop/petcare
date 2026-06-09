@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 const voidSchema = z.object({ voidReason: z.string().min(1) })
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
@@ -24,7 +25,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     })
 
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Error voiding invoice' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'invoice/[id]/void/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Error voiding invoice' }, { status: 400 })
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const createSchema = z.object({
   receiverId: z.string(),
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const appointmentId = url.searchParams.get('appointmentId')
     const peerId = url.searchParams.get('peerId') || url.searchParams.get('senderId')
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (appointmentId) {
       const appointment = await prisma.appointment.findUnique({
@@ -40,7 +41,8 @@ export async function GET(req: Request) {
 
     const data = await prisma.pesan.findMany({ where, orderBy: { createdAt: 'asc' } })
     return NextResponse.json({ data })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'konsultasi/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching messages' }, { status: 500 })
   }
 }
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
       if (token.role !== 'ADMIN' && senderId !== appointment.pelangganId && senderId !== appointment.dokterId) return forbidden()
     }
 
-    const created = await prisma.pesan.create({ data: { ...parsed, senderId } as any })
+    const created = await prisma.pesan.create({ data: { ...parsed, senderId } })
 
     // publish via SSE
     try {
@@ -77,7 +79,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'konsultasi/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

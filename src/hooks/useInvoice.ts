@@ -1,12 +1,19 @@
+'use client'
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query'
+import type { Invoice, ApiResponse, InvoiceCreateInput, InvoiceUpdateInput } from '@/types'
 
 const INVOICE_KEY = ['invoice']
 
-export const useInvoice = (status?: string) => {
-  const qc = useQueryClient()
+interface InvoiceQueryResponse {
+  data: Invoice[]
+}
+
+export const useInvoice = (status?: string): UseQueryResult<InvoiceQueryResponse, Error> => {
   const queryKey = status ? [...INVOICE_KEY, status] : INVOICE_KEY
 
-  const query = useQuery<{ data: any[] }, Error>({
+  return useQuery<InvoiceQueryResponse, Error>({
     queryKey,
     queryFn: async () => {
       const url = new URL('/api/invoice', window.location.href)
@@ -16,9 +23,24 @@ export const useInvoice = (status?: string) => {
       return res.json()
     },
   })
+}
 
-  const create = useMutation<any, Error, any>({
-    mutationFn: async (data: any) => {
+interface CreateInvoiceData {
+  customerId: string
+  hewanId?: string
+  items: Array<{
+    inventoryId?: string
+    namaItem: string
+    quantity: number
+    unitPrice: number
+  }>
+}
+
+export const useCreateInvoice = (): UseMutationResult<Invoice, Error, CreateInvoiceData> => {
+  const qc = useQueryClient()
+
+  return useMutation<Invoice, Error, CreateInvoiceData>({
+    mutationFn: async (data: CreateInvoiceData) => {
       const res = await fetch('/api/invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,8 +51,12 @@ export const useInvoice = (status?: string) => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: INVOICE_KEY }),
   })
+}
 
-  const update = useMutation<any, Error, { id: string; data: any }>({
+export const useUpdateInvoice = (): UseMutationResult<Invoice, Error, { id: string; data: InvoiceUpdateInput }> => {
+  const qc = useQueryClient()
+
+  return useMutation<Invoice, Error, { id: string; data: InvoiceUpdateInput }>({
     mutationFn: async ({ id, data }) => {
       const res = await fetch(`/api/invoice/${id}`, {
         method: 'PUT',
@@ -42,8 +68,12 @@ export const useInvoice = (status?: string) => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: INVOICE_KEY }),
   })
+}
 
-  const approve = useMutation<any, Error, string>({
+export const useApproveInvoice = (): UseMutationResult<Invoice, Error, string> => {
+  const qc = useQueryClient()
+
+  return useMutation<Invoice, Error, string>({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/invoice/${id}/approve`, { method: 'PUT' })
       if (!res.ok) throw new Error('Gagal approve invoice')
@@ -51,8 +81,12 @@ export const useInvoice = (status?: string) => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: INVOICE_KEY }),
   })
+}
 
-  const printInvoice = useMutation<any, Error, string>({
+export const usePrintInvoice = (): UseMutationResult<Invoice, Error, string> => {
+  const qc = useQueryClient()
+
+  return useMutation<Invoice, Error, string>({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/invoice/${id}/print`, { method: 'PUT' })
       if (!res.ok) throw new Error('Gagal print invoice')
@@ -60,8 +94,12 @@ export const useInvoice = (status?: string) => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: INVOICE_KEY }),
   })
+}
 
-  const voidInvoice = useMutation<any, Error, { id: string; voidReason: string }>({
+export const useVoidInvoice = (): UseMutationResult<Invoice, Error, { id: string; voidReason: string }> => {
+  const qc = useQueryClient()
+
+  return useMutation<Invoice, Error, { id: string; voidReason: string }>({
     mutationFn: async ({ id, voidReason }) => {
       const res = await fetch(`/api/invoice/${id}/void`, {
         method: 'PUT',
@@ -73,8 +111,6 @@ export const useInvoice = (status?: string) => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: INVOICE_KEY }),
   })
-
-  return { query, create, update, approve, printInvoice, voidInvoice }
 }
 
 export default useInvoice

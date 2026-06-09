@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import type { Appointment } from '@/types'
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -23,7 +24,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
   })
 }
 
-export async function sendAppointmentConfirmation(to: string, appointment: any) {
+export async function sendAppointmentConfirmation(to: string, appointment: Appointment) {
   await transporter.sendMail({
     from: process.env.SMTP_USER,
     to,
@@ -36,7 +37,7 @@ export async function sendAppointmentConfirmation(to: string, appointment: any) 
   })
 }
 
-export async function sendAppointmentReminder(to: string, appointment: any) {
+export async function sendAppointmentReminder(to: string, appointment: Appointment) {
   await transporter.sendMail({
     from: process.env.SMTP_USER,
     to,
@@ -50,7 +51,7 @@ export async function sendAppointmentReminder(to: string, appointment: any) {
   })
 }
 
-export async function sendAppointmentCancellation(to: string, appointment: any) {
+export async function sendAppointmentCancellation(to: string, appointment: Appointment) {
   await transporter.sendMail({
     from: process.env.SMTP_USER,
     to,
@@ -82,7 +83,7 @@ function baseUrl() {
   return process.env.NEXTAUTH_URL || process.env.NOW_URL || 'http://localhost:3000'
 }
 
-function renderAppointmentDetails(appointment: any) {
+function renderAppointmentDetails(appointment: Appointment) {
   return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:16px;">
       <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;"><strong>Tanggal</strong><br/>${appointment.tanggal}</td></tr>

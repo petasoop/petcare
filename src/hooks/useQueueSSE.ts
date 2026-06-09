@@ -5,7 +5,7 @@ export default function useQueueSSE() {
   const qc = useQueryClient()
   useEffect(() => {
     const es = new EventSource('/api/appointment/sse')
-    es.addEventListener('queue:update', (e: any) => {
+    es.addEventListener('queue:update', (e: MessageEvent) => {
       try {
         qc.invalidateQueries({ queryKey: ['appointment'] })
       } catch (err) {}

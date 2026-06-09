@@ -8,11 +8,19 @@ type Column<T> = {
   render?: (row: T) => React.ReactNode
 }
 
+type EmptyAction = {
+  label: string
+  onClick: () => void
+}
+
 type Props<T extends Record<string, any>> = {
   columns: Column<T>[]
   data: T[]
   pageSize?: number
   searchPlaceholder?: string
+  loading?: boolean
+  emptyState?: React.ReactNode
+  emptyAction?: EmptyAction
 }
 
 function normalizeValue(value: unknown) {
@@ -28,6 +36,9 @@ export default function DataTable<T extends Record<string, any>>({
   data,
   pageSize = 10,
   searchPlaceholder = 'Cari data...',
+  loading = false,
+  emptyState,
+  emptyAction,
 }: Props<T>) {
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<string | null>(null)
@@ -79,13 +90,14 @@ export default function DataTable<T extends Record<string, any>>({
       <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-sm font-semibold text-slate-900">Daftar Data</div>
-          <div className="text-xs text-slate-500">{sorted.length} baris ditemukan</div>
+          <div className="text-xs text-slate-500">{loading ? 'Memuat data...' : `${sorted.length} baris ditemukan`}</div>
         </div>
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-teal-400 sm:w-80"
+          disabled={loading}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-teal-400 sm:w-80 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -110,10 +122,31 @@ export default function DataTable<T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
-            {visibleRows.length === 0 ? (
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <tr key={index} className="animate-pulse">
+                  {columns.map((column) => (
+                    <td key={column.key} className="px-4 py-5 text-sm text-slate-700">
+                      <div className="h-4 w-full rounded bg-slate-200" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : visibleRows.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-sm text-slate-500" colSpan={columns.length}>
-                  Tidak ada data yang cocok.
+                <td className="px-4 py-12 text-center text-sm text-slate-500" colSpan={columns.length}>
+                  <div className="space-y-3">
+                    {emptyState ? emptyState : <div>Tidak ada data yang cocok.</div>}
+                    {emptyAction ? (
+                      <button
+                        type="button"
+                        onClick={emptyAction.onClick}
+                        className="mx-auto mt-3 inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                      >
+                        {emptyAction.label}
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ) : (

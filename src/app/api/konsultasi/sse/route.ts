@@ -60,11 +60,11 @@ export async function GET(req: Request) {
   })
 }
 
-function encodeEvent(event: { event?: string; data: any }) {
-  const lines = []
+function encodeEvent(event: { event?: string; data: unknown }) {
+  const lines: string[] = []
   if (event.event) lines.push(`event: ${event.event}`)
   const payload = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
-  payload.split('\n').forEach((line: string) => lines.push(`data: ${line}`))
+  payload.split('\n').forEach((line) => lines.push(`data: ${line}`))
   lines.push('\n')
   return new TextEncoder().encode(lines.join('\n'))
 }

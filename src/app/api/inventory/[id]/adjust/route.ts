@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const adjustSchema = z.object({
   adjustment: z.coerce.number().int(),
@@ -47,7 +48,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     ])
 
     return NextResponse.json(updated[0])
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Error adjusting inventory' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'inventory/[id]/adjust/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Error adjusting inventory' }, { status: 400 })
   }
 }

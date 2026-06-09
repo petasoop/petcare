@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({
   hari: z.string().optional(),
@@ -24,8 +25,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const parsed = updateSchema.parse(body)
     const updated = await prisma.jadwalDokter.update({ where: { id: params.id }, data: parsed })
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'jadwal/[id]/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }
 
@@ -41,7 +43,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     await prisma.jadwalDokter.delete({ where: { id: params.id } })
     return NextResponse.json({ message: 'Deleted' })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'jadwal/[id]/route.ts', functionName: 'DELETE' })
     return NextResponse.json({ message: 'Error deleting jadwal' }, { status: 500 })
   }
 }

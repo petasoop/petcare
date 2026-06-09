@@ -1,37 +1,32 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import type { ApiToken, CurrentUser, CurrentUserWithName } from '@/types'
+import { logError } from './error-logging'
 
-export type ApiRole = 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
+export async function getApiToken(req: Request): Promise<ApiToken | null> {
+  try {
+    const session = await auth()
+    if (!session?.user) return null
 
-export type ApiToken = {
-  id?: string
-  sub?: string
-  role?: ApiRole
-  name?: string
-  email?: string
-  avatar?: string
-}
+    const sessionUser = session.user as unknown as Record<string, unknown>
 
-export function normalizeRole(role?: string | null): ApiRole | undefined {
-  if (!role) return undefined
-  if (role === 'CLIENT' || role === 'ADMIN' || role === 'STAFF' || role === 'DOKTER') return role as ApiRole
-  return undefined
-}
-
-export async function getApiToken(req: Request) {
-  const session = await auth()
-  if (!session?.user) return null
-
-  return {
-    id: session.user.id as string,
-    role: normalizeRole((session.user as any).role),
-    name: session.user.name ?? undefined,
-    email: session.user.email ?? undefined,
-    avatar: (session.user as any).avatar ?? undefined,
+    return {
+      id: session.user.id as string,
+      role: normalizeRole(sessionUser.role as string | null),
+      name: (session.user.name ?? undefined) as string | undefined,
+      email: (session.user.email ?? undefined) as string | undefined,
+      avatar: (sessionUser.avatar ?? undefined) as string | undefined,
+    }
+  } catch (error) {
+    logError(error, {
+      fileName: 'api-auth.ts',
+      functionName: 'getApiToken',
+    })
+    return null
   }
 }
 
-export async function getCurrentUser(req: Request) {
+export async function getCurrentUser(req: Request): Promise<CurrentUser | null> {
   const token = await getApiToken(req)
   if (!token || !token.id || !token.role || !token.email) return null
   return {
@@ -41,7 +36,7 @@ export async function getCurrentUser(req: Request) {
   }
 }
 
-export async function getCurrentUserWithRole(req: Request) {
+export async function getCurrentUserWithRole(req: Request): Promise<CurrentUserWithName | null> {
   const token = await getApiToken(req)
   if (!token || !token.id || !token.role) return null
   return {
@@ -53,18 +48,26 @@ export async function getCurrentUserWithRole(req: Request) {
   }
 }
 
-export function getTokenUserId(token: ApiToken | null) {
+export function getTokenUserId(token: ApiToken | null): string {
   return token?.id || token?.sub || ''
 }
 
-export function unauthorized(message = 'Unauthorized') {
+export function normalizeRole(role?: string | null): 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT' | undefined {
+  if (!role) return undefined
+  if (role === 'CLIENT' || role === 'ADMIN' || role === 'STAFF' || role === 'DOKTER') {
+    return role as 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
+  }
+  return undefined
+}
+
+export function unauthorized(message = 'Unauthorized'): NextResponse {
   return NextResponse.json({ message }, { status: 401 })
 }
 
-export function forbidden(message = 'Forbidden') {
+export function forbidden(message = 'Forbidden'): NextResponse {
   return NextResponse.json({ message }, { status: 403 })
 }
 
-export function notFound(message = 'Not found') {
+export function notFound(message = 'Not found'): NextResponse {
   return NextResponse.json({ message }, { status: 404 })
 }

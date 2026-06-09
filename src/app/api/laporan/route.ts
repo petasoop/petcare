@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 export async function GET(req: Request) {
   try {
@@ -15,9 +16,9 @@ export async function GET(req: Request) {
     const type = url.searchParams.get('type') || 'monthly'
 
     // simple aggregation: count appointments by status
-    const where: any = {}
-    if (from) where.createdAt = { gte: new Date(from) }
-    if (to) where.createdAt = { ...(where.createdAt || {}), lte: new Date(to) }
+    const where: Record<string, unknown> = {}
+    if (from) where['createdAt'] = { gte: new Date(from) }
+    if (to) where['createdAt'] = { ...(where['createdAt'] as Record<string, unknown> | undefined), lte: new Date(to) }
 
     const counts = await prisma.appointment.groupBy({
       by: ['status'],
@@ -26,7 +27,8 @@ export async function GET(req: Request) {
     })
 
     return NextResponse.json({ counts, type })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'laporan/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error generating report' }, { status: 500 })
   }
 }

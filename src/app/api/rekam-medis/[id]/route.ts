@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 import { sseService } from '@/lib/sse'
 
 const updateSchema = z.object({ keluhan: z.string().optional(), diagnosis: z.string().optional(), tindakan: z.string().optional(), resep: z.string().optional(), obat: z.string().optional(), perawatan: z.string().optional(), dosis: z.string().optional(), catatanPerawatan: z.string().optional(), catatanDokter: z.string().optional(), lampiran: z.array(z.string()).optional() })
@@ -12,17 +13,29 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!token) return unauthorized()
 
     const { id } = params
-    const item = await prisma.rekamMedis.findUnique({ where: { id }, include: { progress: { orderBy: { tanggal: 'desc' } } } })
+    const item = await prisma.rekamMedis.findUnique({
+      where: { id },
+      select: {
+        hewanId: true,
+        dokterId: true,
+        progress: { orderBy: { tanggal: 'desc' } },
+      },
+    })
     if (!item) return notFound()
 
     const userId = getTokenUserId(token)
-    if (token.role !== 'ADMIN' && token.role !== 'DOKTER') {
+    if (token.role === 'ADMIN') {
+      // admins can access all records
+    } else if (token.role === 'DOKTER') {
+      if (item.dokterId !== userId) return forbidden()
+    } else {
       const hewan = await prisma.hewan.findUnique({ where: { id: item.hewanId }, select: { pelangganId: true } })
       if (!hewan || hewan.pelangganId !== userId) return forbidden()
     }
 
     return NextResponse.json(item)
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/[id]/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error' }, { status: 500 })
   }
 }
@@ -40,7 +53,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const body = await req.json()
     const parsed = updateSchema.parse(body)
-    const updated = await prisma.rekamMedis.update({ where: { id }, data: parsed as any })
+    const updated = await prisma.rekamMedis.update({ where: { id }, data: parsed })
 
     const rekam = await prisma.rekamMedis.findUnique({ where: { id }, select: { hewan: { select: { pelangganId: true } }, dokterId: true } })
     if (rekam) {
@@ -49,8 +62,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/[id]/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }
 
@@ -67,7 +81,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     await prisma.rekamMedis.delete({ where: { id } })
     return NextResponse.json({ message: 'Deleted' })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/[id]/route.ts', functionName: 'DELETE' })
     return NextResponse.json({ message: 'Error deleting' }, { status: 500 })
   }
 }

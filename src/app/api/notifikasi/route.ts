@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const broadcastSchema = z.object({
   target: z.string(),
@@ -23,7 +24,8 @@ export async function GET(req: Request) {
 
     const data = await prisma.notifikasi.findMany({ where: { userId: targetUserId }, orderBy: { createdAt: 'desc' } })
     return NextResponse.json({ data })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'notifikasi/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching notifications' }, { status: 500 })
   }
 }
@@ -41,7 +43,8 @@ export async function POST(req: Request) {
     const creates = users.map((u) => ({ userId: u.id, judul: parsed.judul, isi: parsed.isi, tipe: parsed.tipe }))
     await prisma.notifikasi.createMany({ data: creates })
     return NextResponse.json({ message: 'Broadcast sent' })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'notifikasi/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

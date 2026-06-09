@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "ts-node --transpile-only prisma/seed.ts",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "ts-node --transpile-only prisma/seed.ts"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -29,7 +31,6 @@
     "react-dom": "18.2.0",
     "react-hook-form": "^7.55.0",
     "sonner": "^2.0.7",
-    "swr": "2.1.2",
     "tailwindcss": "^3.4.17",
     "xlsx": "0.18.5",
     "zod": "^3.23.8"

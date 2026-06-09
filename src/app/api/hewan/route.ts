@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
+import type { ApiPaginatedResponse, HewanCreateInput } from '@/types'
 
 const createSchema = z.object({
   nama: z.string(),
-  jenis: z.string(),
+  jenis: z.enum(['KUCING', 'ANJING', 'BURUNG', 'KELINCI', 'LAINNYA']),
   ras: z.string().optional(),
   tanggalLahir: z.string().optional(),
   beratBadan: z.number().optional(),
@@ -14,7 +16,7 @@ const createSchema = z.object({
   pelangganId: z.string().optional(),
 })
 
-export async function GET(req: Request) {
+export async function GET(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -26,7 +28,11 @@ export async function GET(req: Request) {
     const limit = Number(url.searchParams.get('limit') || '10')
     const pelangganId = url.searchParams.get('pelangganId')
     const skip = (page - 1) * limit
-    let where: { pelangganId?: string } | undefined
+
+    interface WhereClause {
+      pelangganId?: string
+    }
+    let where: WhereClause | undefined
 
     if (role === 'ADMIN' || role === 'DOKTER' || role === 'STAFF') {
       where = pelangganId ? { pelangganId } : undefined
@@ -39,13 +45,19 @@ export async function GET(req: Request) {
       prisma.hewan.findMany({ where, skip, take: limit }),
       where ? prisma.hewan.count({ where }) : prisma.hewan.count(),
     ])
-    return NextResponse.json({ data, meta: { page, limit, total: count } })
-  } catch (err) {
+
+    const response: ApiPaginatedResponse = { data, meta: { page, limit, total: count } }
+    return NextResponse.json(response)
+  } catch (error) {
+    logError(error, {
+      fileName: 'hewan/route.ts',
+      functionName: 'GET',
+    })
     return NextResponse.json({ message: 'Error fetching hewan' }, { status: 500 })
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -59,9 +71,29 @@ export async function POST(req: Request) {
     if (role === 'CLIENT') parsed.pelangganId = userId
     if (!parsed.pelangganId) return NextResponse.json({ message: 'pelangganId is required' }, { status: 400 })
     if (role === 'CLIENT' && parsed.pelangganId !== userId) return forbidden()
-    const created = await prisma.hewan.create({ data: parsed as any })
+
+    const createData: HewanCreateInput = {
+      nama: parsed.nama,
+      jenis: parsed.jenis,
+      ras: parsed.ras ?? null,
+      tanggalLahir: parsed.tanggalLahir ? new Date(parsed.tanggalLahir) : null,
+      beratBadan: parsed.beratBadan ?? null,
+      foto: parsed.foto ?? null,
+      catatanKhusus: parsed.catatanKhusus ?? null,
+      pelangganId: parsed.pelangganId,
+    }
+
+    const created = await prisma.hewan.create({ data: createData })
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, {
+      fileName: 'hewan/route.ts',
+      functionName: 'POST',
+    })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: 'Invalid input', details: error.errors }, { status: 400 })
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create hewan'
+    return NextResponse.json({ message: errorMessage }, { status: 400 })
   }
 }

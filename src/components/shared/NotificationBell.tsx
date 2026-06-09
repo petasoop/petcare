@@ -1,19 +1,21 @@
 "use client"
+
 import React, { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useNotifikasi, useMarkRead } from '@/hooks/useNotifikasi'
+import type { Notifikasi, SessionUser } from '@/types'
 
-export default function NotificationBell() {
+export default function NotificationBell(): React.ReactElement {
   const [open, setOpen] = useState(false)
   const { data: session } = useSession()
-  const userId = (session?.user as any)?.id
+  const userId = (session?.user as unknown as SessionUser | undefined)?.id
   const { data, isLoading } = useNotifikasi(userId)
   const markRead = useMarkRead(userId)
 
-  const notifications = data?.data || []
-  const unreadCount = notifications.filter((n: any) => !n.isRead).length
+  const notifications: Notifikasi[] = data?.data || []
+  const unreadCount = notifications.filter((notification: Notifikasi) => !notification.isRead).length
 
-  const toggleOpen = () => setOpen((value) => !value)
+  const toggleOpen = (): void => setOpen((value) => !value)
 
   return (
     <div className="relative">
@@ -27,7 +29,9 @@ export default function NotificationBell() {
             <div className="text-sm font-medium">Notifikasi</div>
             <button
               onClick={async () => {
-                await Promise.all(notifications.filter((n: any) => !n.isRead).map((n: any) => markRead.mutateAsync(n.id)))
+                await Promise.all(
+                  notifications.filter((notification: Notifikasi) => !notification.isRead).map((notification: Notifikasi) => markRead.mutateAsync(notification.id))
+                )
               }}
               disabled={markRead.status === 'pending' || unreadCount === 0}
               className="text-xs text-teal-600 hover:underline disabled:text-slate-300"
@@ -39,15 +43,14 @@ export default function NotificationBell() {
             {isLoading ? (
               <div className="text-sm text-gray-500">Memuat...</div>
             ) : notifications.length ? (
-              notifications.map((n: any) => (
+              notifications.map((notification: Notifikasi) => (
                 <button
-                  key={n.id}
-                  onClick={() => markRead.mutateAsync(n.id)}
-                  className={`w-full text-left p-2 rounded ${n.isRead ? 'bg-white' : 'bg-teal-50 hover:bg-teal-100'}`}
-                >
-                  <div className="font-semibold">{n.judul}</div>
-                  <div className="text-xs text-gray-600">{n.isRead ? 'Telah dibaca' : 'Baru'}</div>
-                  <div className="text-sm text-slate-600 mt-1">{n.isi}</div>
+                  key={notification.id}
+                  onClick={() => markRead.mutateAsync(notification.id)}
+                  className={`w-full text-left p-2 rounded ${notification.isRead ? 'bg-white' : 'bg-teal-50 hover:bg-teal-100'}`}>
+                  <div className="font-semibold">{notification.judul}</div>
+                  <div className="text-xs text-gray-600">{notification.isRead ? 'Telah dibaca' : 'Baru'}</div>
+                  <div className="text-sm text-slate-600 mt-1">{notification.isi}</div>
                 </button>
               ))
             ) : (

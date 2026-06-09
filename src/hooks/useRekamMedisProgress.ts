@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { TreatmentProgress } from '@/types'
 
 export function useRekamMedisProgress(rekamMedisId?: string) {
   const qc = useQueryClient()
   const key = ['rekam-medis-progress', rekamMedisId]
 
-  const query = useQuery({
+  const query = useQuery<{ data: TreatmentProgress[] }, Error>({
     queryKey: key,
     queryFn: async () => {
       if (!rekamMedisId) return { data: [] }
@@ -15,7 +16,7 @@ export function useRekamMedisProgress(rekamMedisId?: string) {
     enabled: !!rekamMedisId,
   })
 
-  const create = useMutation<any, Error, { rekamMedisId: string; data: any }>(
+  const create = useMutation<TreatmentProgress, Error, { rekamMedisId: string; data: { kondisi: string; progress: string; catatan?: string } }>(
     async ({ rekamMedisId, data }) => {
       const res = await fetch(`/api/rekam-medis/${rekamMedisId}/progress`, {
         method: 'POST',

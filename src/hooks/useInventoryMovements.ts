@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import type { ApiResponse, InventoryMovement } from '@/types'
 
 export const useInventoryMovements = (inventoryId?: string) => {
   const key = ['inventory', 'movements', inventoryId || 'all']
 
-  const query = useQuery<{ data: any[] }, Error>({
+  const query = useQuery<ApiResponse<InventoryMovement[]>, Error>({
     queryKey: key,
     queryFn: async () => {
       const url = inventoryId ? `/api/inventory/movements?inventoryId=${inventoryId}` : '/api/inventory/movements'

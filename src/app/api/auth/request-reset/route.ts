@@ -4,6 +4,7 @@ import { z } from 'zod'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { sendPasswordReset } from '@/lib/email'
+import { logError } from '@/lib/error-logging'
 
 const schema = z.object({ email: z.string().email() })
 
@@ -23,7 +24,8 @@ export async function POST(req: Request) {
     await sendPasswordReset(user.email, token)
 
     return NextResponse.json({ message: 'If the email exists, a reset link will be sent.' })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'auth/request-reset/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

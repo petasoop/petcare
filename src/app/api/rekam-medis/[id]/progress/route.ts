@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 import { sseService } from '@/lib/sse'
 
 const progressSchema = z.object({
@@ -24,7 +25,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const data = await prisma.treatmentProgress.findMany({ where: { rekamMedisId: id }, orderBy: { tanggal: 'desc' } })
     return NextResponse.json({ data })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/[id]/progress/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching progress' }, { status: 500 })
   }
 }
@@ -48,7 +50,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     sseService.publish({ type: `message:${rekam.dokterId}`, payload: { type: 'rekam-medis-progress', rekamMedisId: id, item: created } })
 
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'rekam-medis/[id]/progress/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

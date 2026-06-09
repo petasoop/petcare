@@ -3,6 +3,16 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import type { User } from '@prisma/client'
+import type { JWT } from 'next-auth/jwt'
+
+interface AuthorizeUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar?: string | null
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -13,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<AuthorizeUser | null> {
         if (!credentials?.email || !credentials?.password) return null
         const email = credentials.email as string
         const password = credentials.password as string
@@ -27,23 +37,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: 'jwt' },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<JWT> {
       if (user) {
-        token.id = (user as any).id
-        token.role = (user as any).role
-        token.name = (user as any).name
-        token.email = (user as any).email
-        token.avatar = (user as any).avatar
+        const authorizedUser = user as unknown as AuthorizeUser
+        token.id = authorizedUser.id
+        token.role = authorizedUser.role
+        token.name = authorizedUser.name
+        token.email = authorizedUser.email
+        token.avatar = authorizedUser.avatar
       }
       return token
     },
     async session({ session, token }) {
-      (session as any).user = {
-        id: token.id,
-        role: token.role,
-        name: token.name,
-        email: token.email,
-        avatar: token.avatar,
+      if (session.user) {
+        session.user.id = token.id as string
+        ;(session.user as Record<string, unknown>).role = token.role
+        ;(session.user as Record<string, unknown>).avatar = token.avatar
       }
       return session
     },

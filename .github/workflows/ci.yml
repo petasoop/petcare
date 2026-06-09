@@ -23,6 +23,12 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
         working-directory: petcare-main
+      - name: Type-check
+        run: npx tsc --noEmit
+        working-directory: petcare-main
+      - name: Lint
+        run: npx next lint
+        working-directory: petcare-main
       - name: Build
         run: npm run build
         working-directory: petcare-main

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({
   customerId: z.string().optional(),
@@ -29,7 +30,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!invoice) return notFound()
 
     return NextResponse.json(invoice)
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'invoice/[id]/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching invoice' }, { status: 500 })
   }
 }
@@ -74,7 +76,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     })
 
     return NextResponse.json(updated)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'invoice/[id]/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

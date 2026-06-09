@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
-const createSchema = z.object({ dokterId: z.string(), hari: z.string(), jamMulai: z.string(), jamSelesai: z.string(), isAktif: z.boolean().optional() })
+const createSchema = z.object({ dokterId: z.string(), hari: z.enum(['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU', 'MINGGU']), jamMulai: z.string(), jamSelesai: z.string(), isAktif: z.boolean().optional() })
 
 export async function GET(req: Request) {
   try {
@@ -12,7 +14,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url)
     const dokterId = url.searchParams.get('dokterId')
-    const where: any = {}
+    const where: Prisma.JadwalDokterWhereInput = {}
 
     if (token.role === 'ADMIN') {
       if (dokterId) where.dokterId = dokterId
@@ -25,7 +27,8 @@ export async function GET(req: Request) {
 
     const data = await prisma.jadwalDokter.findMany({ where })
     return NextResponse.json({ data })
-  } catch (err) {
+  } catch (error) {
+    logError(error, { fileName: 'jadwal/route.ts', functionName: 'GET' })
     return NextResponse.json({ message: 'Error fetching jadwal' }, { status: 500 })
   }
 }
@@ -42,9 +45,10 @@ export async function POST(req: Request) {
       if (!parsed.dokterId || parsed.dokterId !== getTokenUserId(token)) return forbidden()
     }
 
-    const created = await prisma.jadwalDokter.create({ data: parsed as any })
+    const created = await prisma.jadwalDokter.create({ data: parsed })
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, { fileName: 'jadwal/route.ts', functionName: 'POST' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

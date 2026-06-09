@@ -38,25 +38,50 @@ const NAV_LINKS: Record<string, { label: string; href: string }[]> = {
   ],
 }
 
-export default function Sidebar({ role }: { role: string }) {
+export default function Sidebar({ role, isOpen, onClose }: { role: string; isOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname()
   const links = NAV_LINKS[role] || NAV_LINKS.CLIENT
 
   return (
-    <aside className="w-64 bg-white border-r p-4 hidden md:block">
-      <div className="mb-6 text-xl font-semibold text-teal-700">Klinik Hewan</div>
-      <nav className="space-y-2">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${pathname === link.href || pathname.startsWith(`${link.href}/`) ? 'bg-teal-600 text-white' : 'hover:bg-teal-50 text-slate-700'}`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-      <div className="mt-8 pt-6 border-t text-sm text-slate-500">Silakan pilih menu di atas untuk mengelola klinik.</div>
-    </aside>
+    <>
+      <aside className="hidden md:block w-64 bg-white border-r p-4">
+        <div className="mb-6 text-xl font-semibold text-teal-700">Klinik Hewan</div>
+        <nav className="space-y-2">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${pathname === link.href || pathname.startsWith(`${link.href}/`) ? 'bg-teal-600 text-white' : 'hover:bg-teal-50 text-slate-700'}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-8 pt-6 border-t text-sm text-slate-500">Silakan pilih menu di atas untuk mengelola klinik.</div>
+      </aside>
+
+      <div className={`fixed inset-0 z-40 md:hidden ${isOpen ? 'block' : 'hidden'}`}>
+        <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
+        <aside className="relative h-full w-72 bg-white border-r p-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-xl font-semibold text-teal-700">Klinik Hewan</div>
+            <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">Tutup</button>
+          </div>
+          <nav className="space-y-2">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onClose}
+                className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${pathname === link.href || pathname.startsWith(`${link.href}/`) ? 'bg-teal-600 text-white' : 'hover:bg-teal-50 text-slate-700'}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mt-8 pt-6 border-t text-sm text-slate-500">Silakan pilih menu di atas untuk mengelola klinik.</div>
+        </aside>
+      </div>
+    </>
   )
 }

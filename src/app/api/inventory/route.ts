@@ -2,10 +2,20 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
+import type { ApiPaginatedResponse, InventoryCreateInput } from '@/types'
 
-const createSchema = z.object({ namaItem: z.string(), kategori: z.string(), stok: z.number(), satuan: z.string(), harga: z.number(), stokMinimal: z.number() })
+const createSchema = z.object({
+  namaItem: z.string(),
+  kategori: z.enum(['OBAT', 'ALAT', 'KONSUMABLE']),
+  stok: z.number(),
+  satuan: z.string(),
+  harga: z.number(),
+  stokMinimal: z.number(),
+  categoryId: z.string().optional(),
+})
 
-export async function GET(req: Request) {
+export async function GET(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -25,13 +35,19 @@ export async function GET(req: Request) {
       prisma.inventory.findMany({ skip, take: limit, orderBy: { updatedAt: 'desc' } }),
       prisma.inventory.count(),
     ])
-    return NextResponse.json({ data, meta: { page, limit, total } })
-  } catch (err) {
+
+    const response: ApiPaginatedResponse = { data, meta: { page, limit, total } }
+    return NextResponse.json(response)
+  } catch (error) {
+    logError(error, {
+      fileName: 'inventory/route.ts',
+      functionName: 'GET',
+    })
     return NextResponse.json({ message: 'Error fetching inventory' }, { status: 500 })
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<NextResponse> {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
@@ -39,9 +55,28 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const parsed = createSchema.parse(body)
-    const created = await prisma.inventory.create({ data: parsed as any })
+
+    const createData: InventoryCreateInput = {
+      namaItem: parsed.namaItem,
+      kategori: parsed.kategori,
+      stok: parsed.stok,
+      satuan: parsed.satuan,
+      harga: parsed.harga,
+      stokMinimal: parsed.stokMinimal,
+      categoryId: parsed.categoryId ?? null,
+    }
+
+    const created = await prisma.inventory.create({ data: createData })
     return NextResponse.json(created, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Invalid input' }, { status: 400 })
+  } catch (error) {
+    logError(error, {
+      fileName: 'inventory/route.ts',
+      functionName: 'POST',
+    })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: 'Invalid input', details: error.errors }, { status: 400 })
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create inventory'
+    return NextResponse.json({ message: errorMessage }, { status: 400 })
   }
 }

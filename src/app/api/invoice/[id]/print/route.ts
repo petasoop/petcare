@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { forbidden, getCurrentUserWithRole, notFound, unauthorized } from '@/lib/api-auth'
+import { logError } from '@/lib/error-logging'
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -59,7 +60,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const printedInvoice = result[result.length - 1]
 
     return NextResponse.json(printedInvoice)
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Error printing invoice' }, { status: 500 })
+  } catch (error) {
+    logError(error, { fileName: 'invoice/[id]/print/route.ts', functionName: 'PUT' })
+    return NextResponse.json({ message: error instanceof Error ? error.message : 'Error printing invoice' }, { status: 500 })
   }
 }
