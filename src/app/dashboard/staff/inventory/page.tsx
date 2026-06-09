@@ -20,7 +20,7 @@ export default function StaffInventoryPage() {
     defaultValues: { namaItem: '', kategori: 'OBAT', stok: 0, satuan: '', harga: 0, stokMinimal: 0 },
   })
 
-  const { register: registerAdjust, handleSubmit: handleAdjustSubmit, reset: resetAdjust, formState: { errors: adjustErrors } } = useForm<InventoryAdjustmentInput>({
+  const { register: registerAdjust, handleSubmit: handleAdjustSubmit, reset: resetAdjust, formState: { errors: adjustErrors } } = useForm({
     resolver: zodResolver(inventoryAdjustmentSchema),
     defaultValues: { inventoryId: '', adjustment: 0, note: '' },
   })
