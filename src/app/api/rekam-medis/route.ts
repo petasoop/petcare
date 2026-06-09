@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getToken } from 'next-auth/jwt'
+import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
 
 const createSchema = z.object({
   appointmentId: z.string(),
@@ -18,13 +18,21 @@ const createSchema = z.object({
 
 export async function GET(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+
     const url = new URL(req.url)
     const hewanId = url.searchParams.get('hewanId') || undefined
     const page = Number(url.searchParams.get('page') || '1')
     const limit = Number(url.searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
+    const userId = getTokenUserId(token)
 
     if (hewanId) {
+      const hewan = await prisma.hewan.findUnique({ where: { id: hewanId }, select: { pelangganId: true } })
+      if (!hewan) return notFound('Hewan not found')
+      if (token.role !== 'ADMIN' && token.role !== 'DOKTER' && hewan.pelangganId !== userId) return forbidden()
+
       const [data, total] = await Promise.all([
         prisma.rekamMedis.findMany({ where: { hewanId }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
         prisma.rekamMedis.count({ where: { hewanId } }),
@@ -32,8 +40,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ data, meta: { page, limit, total } })
     }
 
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     if (token.role === 'ADMIN') {
       const [data, total] = await Promise.all([
         prisma.rekamMedis.findMany({ skip, take: limit, orderBy: { createdAt: 'desc' } }),
@@ -43,8 +49,8 @@ export async function GET(req: Request) {
     }
     if (token.role === 'DOKTER') {
       const [data, total] = await Promise.all([
-        prisma.rekamMedis.findMany({ where: { dokterId: token.sub as string }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
-        prisma.rekamMedis.count({ where: { dokterId: token.sub as string } }),
+        prisma.rekamMedis.findMany({ where: { dokterId: userId }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+        prisma.rekamMedis.count({ where: { dokterId: userId } }),
       ])
       return NextResponse.json({ data, meta: { page, limit, total } })
     }
@@ -57,14 +63,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    if (token.role !== 'DOKTER' && token.role !== 'ADMIN') return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'DOKTER' && token.role !== 'ADMIN') return forbidden()
 
     const body = await req.json()
     const parsed = createSchema.parse(body)
     // enforce dokterId from token for DOKTER role
-    if (token.role === 'DOKTER') parsed.dokterId = token.sub as string
+    if (token.role === 'DOKTER') parsed.dokterId = getTokenUserId(token)
+    if (token.role === 'ADMIN' && !parsed.dokterId) return NextResponse.json({ message: 'dokterId is required' }, { status: 400 })
     const created = await prisma.rekamMedis.create({ data: { ...parsed, tanggalPeriksa: new Date(parsed.tanggalPeriksa) } })
     return NextResponse.json(created, { status: 201 })
   } catch (err: any) {

@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { auth } from '@/auth'
 
 export default async function DashboardRootPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session) redirect('/login')
 
   const role = (session.user as any)?.role as string | undefined

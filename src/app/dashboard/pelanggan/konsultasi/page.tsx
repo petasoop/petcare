@@ -1,14 +1,13 @@
 import React from 'react'
 import Chat from '@/components/pelanggan/Chat'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { auth } from '@/auth'
 
 export default async function KonsultasiPage() {
   // server-side get session to obtain user id
   // fallback: client will fetch /api/users/me for user id
   let userId: string | undefined
   try {
-    const session: any = await getServerSession(authOptions)
+    const session: any = await auth()
     userId = session?.user?.id
   } catch (e) {
     userId = undefined

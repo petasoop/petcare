@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getToken } from 'next-auth/jwt'
+import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
 
 const updateSchema = z.object({ dokterId: z.string().nullable().optional(), status: z.string().optional(), catatanAdmin: z.string().optional() })
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+
     const { id } = params
     const item = await prisma.appointment.findUnique({ where: { id } })
-    if (!item) return NextResponse.json({ message: 'Not found' }, { status: 404 })
+    if (!item) return notFound()
+
+    const userId = getTokenUserId(token)
+    if (token.role !== 'ADMIN' && token.role !== 'DOKTER' && item.pelangganId !== userId) return forbidden()
+    if (token.role === 'DOKTER' && item.dokterId !== userId && item.pelangganId !== userId) return forbidden()
+
     return NextResponse.json(item)
   } catch (err) {
     return NextResponse.json({ message: 'Error' }, { status: 500 })
@@ -19,13 +27,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+
+    const item = await prisma.appointment.findUnique({ where: { id }, select: { dokterId: true, pelangganId: true } })
+    if (!item) return notFound()
 
     const body = await req.json()
     const parsed = updateSchema.parse(body)
     // allow DOKTER or ADMIN to update appointment
-    if (token.role !== 'DOKTER' && token.role !== 'ADMIN') return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+    const userId = getTokenUserId(token)
+    if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
+    if (token.role === 'DOKTER' && item.dokterId !== userId) return forbidden()
 
     const updated = await prisma.appointment.update({ where: { id }, data: parsed as any })
 
@@ -44,13 +57,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
 
     // allow ADMIN or owner (pelanggan)
     const appt = await prisma.appointment.findUnique({ where: { id } })
-    if (!appt) return NextResponse.json({ message: 'Not found' }, { status: 404 })
-    if (token.role !== 'ADMIN' && token.sub !== appt.pelangganId) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+    if (!appt) return notFound()
+    const userId = getTokenUserId(token)
+    if (token.role !== 'ADMIN' && userId !== appt.pelangganId) return forbidden()
 
     await prisma.appointment.delete({ where: { id } })
     return NextResponse.json({ message: 'Deleted' })

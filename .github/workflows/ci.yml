@@ -11,16 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: petcare-main
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Install deps
         run: npm ci
-        working-directory: klinik-hewan
+        working-directory: petcare-main
       - name: Generate Prisma Client
         run: npx prisma generate
-        working-directory: klinik-hewan
+        working-directory: petcare-main
       - name: Build
         run: npm run build
-        working-directory: klinik-hewan
+        working-directory: petcare-main

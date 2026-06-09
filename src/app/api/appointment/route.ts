@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getToken } from 'next-auth/jwt'
+import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
 
 const createSchema = z.object({
   pelangganId: z.string().optional(),
@@ -15,6 +15,11 @@ const createSchema = z.object({
 
 export async function GET(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+
+    const userId = getTokenUserId(token)
+    const role = token.role
     const url = new URL(req.url)
     const page = Number(url.searchParams.get('page') || '1')
     const limit = Number(url.searchParams.get('limit') || '20')
@@ -23,8 +28,18 @@ export async function GET(req: Request) {
     const skip = (page - 1) * limit
     const where: any = {}
 
-    if (pelangganId) where.pelangganId = pelangganId
-    if (dokterId) where.dokterId = dokterId
+    if (role === 'ADMIN') {
+      if (pelangganId) where.pelangganId = pelangganId
+      if (dokterId) where.dokterId = dokterId
+    } else if (role === 'DOKTER') {
+      if (pelangganId && pelangganId !== userId) return forbidden()
+      if (dokterId && dokterId !== userId) return forbidden()
+      where.OR = [{ dokterId: userId }, { pelangganId: pelangganId || userId }]
+    } else {
+      if (pelangganId && pelangganId !== userId) return forbidden()
+      if (dokterId) return forbidden()
+      where.pelangganId = userId
+    }
 
     const [data, total] = await Promise.all([
       prisma.appointment.findMany({ where, skip, take: limit, orderBy: { tanggal: 'desc' } }),
@@ -38,12 +53,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'PELANGGAN' && token.role !== 'ADMIN') return forbidden()
 
     const body = await req.json()
     const parsed = createSchema.parse(body)
-    if (!parsed.pelangganId) parsed.pelangganId = token.sub as string
+    const userId = getTokenUserId(token)
+    if (!parsed.pelangganId || token.role === 'PELANGGAN') parsed.pelangganId = userId
+    if (!parsed.pelangganId) return NextResponse.json({ message: 'pelangganId is required' }, { status: 400 })
+    if (token.role === 'PELANGGAN' && parsed.pelangganId !== userId) return forbidden()
     const appointmentData = { ...parsed, tanggal: new Date(parsed.tanggal) } as any
     const created = await prisma.appointment.create({ data: appointmentData })
     return NextResponse.json(created, { status: 201 })

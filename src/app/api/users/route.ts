@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import bcrypt from 'bcrypt'
-import { getToken } from 'next-auth/jwt'
+import bcrypt from 'bcryptjs'
+import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 
 const createSchema = z.object({ name: z.string(), email: z.string().email(), role: z.enum(['ADMIN','DOKTER','PELANGGAN']), password: z.string().min(6) })
 
 export async function GET(req: Request) {
   try {
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== 'ADMIN') return NextResponse.json({ message: 'Unauthorized' }, { status: 403 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'ADMIN') return forbidden()
 
     const url = new URL(req.url)
     const role = url.searchParams.get('role') as 'ADMIN' | 'DOKTER' | 'PELANGGAN' | undefined
@@ -25,9 +26,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const parsed = createSchema.parse(body)
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
+    const token = await getApiToken(req)
     if (parsed.role !== 'PELANGGAN' && (!token || token.role !== 'ADMIN')) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 403 })
+      return forbidden()
     }
 
     const salt = await bcrypt.genSalt(10)

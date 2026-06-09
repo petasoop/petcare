@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
+import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const token = await getApiToken(req)
+  if (!token) return unauthorized()
+  if (token.role !== 'ADMIN') return forbidden()
+
   try {
     const items = await prisma.inventory.findMany()
     const wsData = [

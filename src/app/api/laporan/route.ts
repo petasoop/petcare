@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 
 export async function GET(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
+
     const url = new URL(req.url)
     const from = url.searchParams.get('from')
     const to = url.searchParams.get('to')

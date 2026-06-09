@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
 
 const broadcastSchema = z.object({
   target: z.string(),
@@ -11,10 +12,16 @@ const broadcastSchema = z.object({
 
 export async function GET(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+
     const url = new URL(req.url)
-    const userId = url.searchParams.get('userId')
-    if (!userId) return NextResponse.json({ data: [] })
-    const data = await prisma.notifikasi.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
+    const requestedUserId = url.searchParams.get('userId')
+    const targetUserId = token.role === 'ADMIN' && requestedUserId ? requestedUserId : getTokenUserId(token)
+    if (!targetUserId) return unauthorized()
+    if (token.role !== 'ADMIN' && requestedUserId && requestedUserId !== targetUserId) return forbidden()
+
+    const data = await prisma.notifikasi.findMany({ where: { userId: targetUserId }, orderBy: { createdAt: 'desc' } })
     return NextResponse.json({ data })
   } catch (err) {
     return NextResponse.json({ message: 'Error fetching notifications' }, { status: 500 })
@@ -23,6 +30,10 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'ADMIN') return forbidden()
+
     const body = await req.json()
     const parsed = broadcastSchema.parse(body)
     // simple broadcast to all users for demo

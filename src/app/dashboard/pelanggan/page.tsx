@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useHewan } from '@/hooks/useHewan'
 import { useAppointment } from '@/hooks/useAppointment'
@@ -26,6 +27,21 @@ export default function PelangganHome() {
         <div className="p-4 bg-white rounded shadow">Total Hewan: {hewanCount}</div>
         <div className="p-4 bg-white rounded shadow">Upcoming Appointment: {appointmentCount}</div>
         <div className="p-4 bg-white rounded shadow">Unread Notifications: {unreadNotifications}</div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Link href="/dashboard/pelanggan/monitoring" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
+          <div className="text-sm text-slate-500">Pantau kesehatan</div>
+          <div className="mt-1 font-semibold text-slate-900">Monitoring</div>
+        </Link>
+        <Link href="/dashboard/pelanggan/riwayat" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
+          <div className="text-sm text-slate-500">Cek kunjungan</div>
+          <div className="mt-1 font-semibold text-slate-900">Riwayat</div>
+        </Link>
+        <Link href="/dashboard/pelanggan/profil" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
+          <div className="text-sm text-slate-500">Kelola akun</div>
+          <div className="mt-1 font-semibold text-slate-900">Profil</div>
+        </Link>
       </div>
     </div>
   )

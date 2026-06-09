@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getToken } from 'next-auth/jwt'
+import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 
 const createSchema = z.object({ namaItem: z.string(), kategori: z.string(), stok: z.number(), satuan: z.string(), harga: z.number(), stokMinimal: z.number() })
 
 export async function GET(req: Request) {
   try {
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'ADMIN') return forbidden()
+
     const url = new URL(req.url)
     const page = Number(url.searchParams.get('page') || '1')
     const limit = Number(url.searchParams.get('limit') || '20')
@@ -23,8 +27,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== 'ADMIN') return NextResponse.json({ message: 'Unauthorized' }, { status: 403 })
+    const token = await getApiToken(req)
+    if (!token) return unauthorized()
+    if (token.role !== 'ADMIN') return forbidden()
 
     const body = await req.json()
     const parsed = createSchema.parse(body)

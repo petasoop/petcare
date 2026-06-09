@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateAppointmentsPdfDocument, createPdfBufferFromDocument } from '@/lib/pdf'
+import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 
 export async function GET(req: Request) {
+  const token = await getApiToken(req)
+  if (!token) return unauthorized()
+  if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
+
   const url = new URL(req.url)
   const format = url.searchParams.get('format') || 'pdf'
   try {
