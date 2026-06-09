@@ -211,7 +211,7 @@ export default function InvoiceDashboard({ role }: { role: 'ADMIN' | 'STAFF' }) 
                 <div className="text-sm text-slate-500">Subtotal</div>
                 <div className="text-xl font-semibold">Rp {subtotal.toLocaleString('id-ID')}</div>
               </div>
-              <button type="submit" disabled={create.isLoading} className="rounded-xl bg-teal-600 px-4 py-2 text-white transition hover:bg-teal-700 disabled:opacity-50">Buat Draft Invoice</button>
+              <button type="submit" disabled={create.isPending} className="rounded-xl bg-teal-600 px-4 py-2 text-white transition hover:bg-teal-700 disabled:opacity-50">Buat Draft Invoice</button>
             </div>
           </form>
         </div>

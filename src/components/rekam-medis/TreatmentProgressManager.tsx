@@ -80,7 +80,7 @@ export default function TreatmentProgressManager({ rekamMedis, allowUpdate = fal
               <label className="block text-sm font-medium text-slate-700">Catatan</label>
               <textarea value={form.catatan} onChange={(e) => setForm({ ...form, catatan: e.target.value })} className="mt-1 w-full rounded border p-2" rows={3} />
             </div>
-            <button type="submit" disabled={create.isLoading} className="rounded bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">
+            <button type="submit" disabled={create.isPending} className="rounded bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">
               Tambah Progress
             </button>
           </form>
