@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
+import { assertRole, forbidden, getApiToken, getTokenUserId, notFound, unauthorized } from '@/lib/api-auth'
 import { logError } from '@/lib/error-logging'
 
 const updateSchema = z.object({ dokterId: z.string().nullable().optional(), status: z.string().optional(), catatanAdmin: z.string().optional() })
@@ -38,9 +38,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const body = await req.json()
     const parsed = updateSchema.parse(body)
-    // allow DOKTER or ADMIN to update appointment
     const userId = getTokenUserId(token)
-    if (token.role !== 'ADMIN' && token.role !== 'STAFF' && token.role !== 'DOKTER') return forbidden()
+    if (!assertRole(token, ['ADMIN', 'STAFF', 'DOKTER'])) return forbidden()
     if (token.role === 'DOKTER' && item.dokterId !== userId && item.dokterId !== null) return forbidden()
 
     const updated = await prisma.appointment.update({ where: { id }, data: parsed })

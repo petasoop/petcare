@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server'
 import sendUpcomingAppointmentReminders from '@/lib/reminders'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 import { logError } from '@/lib/error-logging'
 
 export async function POST(req: Request) {
   try {
+    const limit = checkRateLimit(req, 'send-reminders', 5, 60 * 60 * 1000)
+    if (limit.limited) {
+      return NextResponse.json(
+        { message: 'Too many reminder requests, please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      )
+    }
+
     const token = await getApiToken(req)
     if (!token) return unauthorized()
     if (token.role !== 'ADMIN') return forbidden()

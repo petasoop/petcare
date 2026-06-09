@@ -268,11 +268,14 @@ export interface ApiPaginatedResponse<T = unknown> {
   meta: PaginationMeta
 }
 
+// Auth Role Types
+export type ApiRole = 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
+
 // Auth Token Type (used in API routes)
 export interface ApiToken {
   id?: string
   sub?: string
-  role?: 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
+  role?: ApiRole
   name?: string
   email?: string
   avatar?: string

@@ -18,7 +18,7 @@ Docker: see `Dockerfile` for a simple image.
 
 Scheduler / Pengingat Email:
 
-- Untuk lingkungan produksi, jalankan `scripts/send-reminders.js` secara berkala (cron/systemd) atau gunakan worker.
+- Untuk lingkungan produksi, jalankan `npm run send-reminders` secara berkala (cron/systemd) atau gunakan worker.
 
 Contoh cron (setiap jam):
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { forbidden, getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
 import { logError } from '@/lib/error-logging'
 import type { ApiPaginatedResponse, AppointmentCreateInput } from '@/types'
@@ -67,6 +68,14 @@ export async function GET(req: Request): Promise<NextResponse> {
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
+    const limit = checkRateLimit(req, 'create-appointment', 10, 15 * 60 * 1000)
+    if (limit.limited) {
+      return NextResponse.json(
+        { message: 'Too many appointment creation attempts, please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      )
+    }
+
     const token = await getApiToken(req)
     if (!token) return unauthorized()
     if (token.role !== 'CLIENT' && token.role !== 'ADMIN') return forbidden()

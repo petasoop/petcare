@@ -40,6 +40,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Password reset successful' })
   } catch (error) {
     logError(error, { fileName: 'auth/reset-password/route.ts', functionName: 'POST' })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: 'Invalid input', details: error.errors }, { status: 400 })
+    }
     return NextResponse.json({ message: error instanceof Error ? error.message : 'Invalid input' }, { status: 400 })
   }
 }

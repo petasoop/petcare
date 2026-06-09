@@ -5,11 +5,20 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { sendPasswordReset } from '@/lib/email'
 import { logError } from '@/lib/error-logging'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: Request) {
   try {
+    const limit = checkRateLimit(req, 'request-password-reset', 5, 15 * 60 * 1000)
+    if (limit.limited) {
+      return NextResponse.json(
+        { message: 'Too many password reset requests, please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      )
+    }
+
     const body = await req.json()
     const { email } = schema.parse(body)
     const user = await prisma.user.findUnique({ where: { email } })

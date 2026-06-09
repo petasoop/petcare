@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import type { ApiToken, CurrentUser, CurrentUserWithName } from '@/types'
+import type { ApiToken, ApiRole, CurrentUser, CurrentUserWithName } from '@/types'
 import { logError } from './error-logging'
+
+export const API_ROLES = ['ADMIN', 'STAFF', 'DOKTER', 'CLIENT'] as const
 
 export async function getApiToken(req: Request): Promise<ApiToken | null> {
   try {
@@ -9,13 +11,15 @@ export async function getApiToken(req: Request): Promise<ApiToken | null> {
     if (!session?.user) return null
 
     const sessionUser = session.user as unknown as Record<string, unknown>
+    const role = normalizeRole(sessionUser.role as string | null)
+    if (!role) return null
 
     return {
       id: session.user.id as string,
-      role: normalizeRole(sessionUser.role as string | null),
-      name: (session.user.name ?? undefined) as string | undefined,
-      email: (session.user.email ?? undefined) as string | undefined,
-      avatar: (sessionUser.avatar ?? undefined) as string | undefined,
+      role,
+      name: session.user.name ?? undefined,
+      email: session.user.email ?? undefined,
+      avatar: (sessionUser.avatar as string | undefined) ?? undefined,
     }
   } catch (error) {
     logError(error, {
@@ -52,12 +56,14 @@ export function getTokenUserId(token: ApiToken | null): string {
   return token?.id || token?.sub || ''
 }
 
-export function normalizeRole(role?: string | null): 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT' | undefined {
+export function normalizeRole(role?: string | null): ApiRole | undefined {
   if (!role) return undefined
-  if (role === 'CLIENT' || role === 'ADMIN' || role === 'STAFF' || role === 'DOKTER') {
-    return role as 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
-  }
+  if (API_ROLES.includes(role as ApiRole)) return role as ApiRole
   return undefined
+}
+
+export function assertRole(token: ApiToken | null, expectedRoles: ApiRole[]): token is ApiToken {
+  return Boolean(token && token.role && expectedRoles.includes(token.role))
 }
 
 export function unauthorized(message = 'Unauthorized'): NextResponse {
