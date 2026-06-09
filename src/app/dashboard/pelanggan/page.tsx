@@ -6,6 +6,10 @@ import { useSession } from 'next-auth/react'
 import { useHewan } from '@/hooks/useHewan'
 import { useAppointment } from '@/hooks/useAppointment'
 import { useNotifikasi } from '@/hooks/useNotifikasi'
+import { Bell, ClipboardList, HeartPulse, PawPrint, Users, CalendarDays } from 'lucide-react'
+import PageHeader from '@/components/shared/PageHeader'
+import StatsCard from '@/components/shared/StatsCard'
+import LoadingSpinner from '@/components/shared/LoadingSpinner'
 
 export default function PelangganHome() {
   const { data: session, status } = useSession()
@@ -18,31 +22,52 @@ export default function PelangganHome() {
   const appointmentCount = (appointmentData as { data: any[] } | undefined)?.data?.length || 0
   const unreadNotifications = (notifikasiData as { data: any[] } | undefined)?.data?.filter((n) => !n.isRead).length || 0
 
-  if (status === 'loading') return <div>Memuat data...</div>
+  if (status === 'loading') return <LoadingSpinner />
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-teal-700">Selamat datang, {session?.user?.name || 'Pelanggan'}</h2>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white rounded shadow">Total Hewan: {hewanCount}</div>
-        <div className="p-4 bg-white rounded shadow">Upcoming Appointment: {appointmentCount}</div>
-        <div className="p-4 bg-white rounded shadow">Unread Notifications: {unreadNotifications}</div>
+      <PageHeader
+        title={`Selamat datang, ${session?.user?.name || 'Pelanggan'}`}
+        subtitle="Kelola hewan kesayangan, jadwal kunjungan, dan notifikasi klinik dengan tampilan yang aman dan mudah diakses." 
+      />
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <StatsCard icon={<PawPrint size={24} />} label="Hewan" value={hewanCount} trend={{ direction: 'up', percent: 7, label: 'dibanding bulan lalu' }} />
+        <StatsCard icon={<CalendarDays size={24} />} label="Janji" value={appointmentCount} trend={{ direction: 'up', percent: 5, label: 'minggu ini' }} />
+        <StatsCard icon={<Bell size={24} />} label="Notifikasi" value={unreadNotifications} trend={{ direction: 'up', percent: 2, label: 'baru' }} />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Link href="/dashboard/pelanggan/monitoring" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
-          <div className="text-sm text-slate-500">Pantau kesehatan</div>
-          <div className="mt-1 font-semibold text-slate-900">Monitoring</div>
+      <section className="mt-8 grid gap-4 md:grid-cols-3">
+        <Link href="/dashboard/pelanggan/monitoring" className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Cek status kesehatan</p>
+              <h3 className="mt-3 text-lg font-semibold text-slate-900">Monitoring</h3>
+            </div>
+            <HeartPulse size={28} className="text-teal-600" />
+          </div>
         </Link>
-        <Link href="/dashboard/pelanggan/riwayat" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
-          <div className="text-sm text-slate-500">Cek kunjungan</div>
-          <div className="mt-1 font-semibold text-slate-900">Riwayat</div>
+
+        <Link href="/dashboard/pelanggan/riwayat" className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Lihat riwayat kunjungan</p>
+              <h3 className="mt-3 text-lg font-semibold text-slate-900">Riwayat</h3>
+            </div>
+            <ClipboardList size={28} className="text-teal-600" />
+          </div>
         </Link>
-        <Link href="/dashboard/pelanggan/profil" className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-300">
-          <div className="text-sm text-slate-500">Kelola akun</div>
-          <div className="mt-1 font-semibold text-slate-900">Profil</div>
+
+        <Link href="/dashboard/pelanggan/profil" className="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Perbarui informasi akun</p>
+              <h3 className="mt-3 text-lg font-semibold text-slate-900">Profil</h3>
+            </div>
+            <Users size={28} className="text-teal-600" />
+          </div>
         </Link>
-      </div>
+      </section>
     </div>
   )
 }
