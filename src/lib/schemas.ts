@@ -21,5 +21,23 @@ export const appointmentSchema = z.object({
   keluhan: z.string().optional(),
 })
 
+export const inventorySchema = z.object({
+  namaItem: z.string().min(1, 'Nama item wajib diisi'),
+  kategori: z.enum(['OBAT', 'ALAT', 'KONSUMABLE']),
+  stok: z.coerce.number().int().min(0, 'Stok tidak boleh negatif'),
+  satuan: z.string().min(1, 'Satuan wajib diisi'),
+  harga: z.coerce.number().min(0, 'Harga tidak boleh negatif'),
+  stokMinimal: z.coerce.number().int().min(0, 'Stok minimal tidak boleh negatif'),
+})
+
+export const adminUserSchema = z.object({
+  name: z.string().min(1, 'Nama wajib diisi'),
+  email: z.string().email('Email tidak valid'),
+  role: z.enum(['PELANGGAN', 'DOKTER', 'ADMIN']),
+  password: z.string().min(8, 'Password minimal 8 karakter'),
+})
+
 export type HewanInput = z.infer<typeof hewanSchema>
 export type AppointmentInput = z.infer<typeof appointmentSchema>
+export type InventoryInput = z.infer<typeof inventorySchema>
+export type AdminUserInput = z.infer<typeof adminUserSchema>

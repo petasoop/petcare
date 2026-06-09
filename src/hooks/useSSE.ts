@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-export default function useSSE(userId?: string) {
+export default function useSSE(userId?: string, onMessage?: (payload: any) => void) {
   const qc = useQueryClient()
 
   useEffect(() => {
@@ -11,11 +11,11 @@ export default function useSSE(userId?: string) {
       try {
         const payload = JSON.parse(e.data)
         qc.invalidateQueries({ queryKey: ['konsultasi', { userId }] })
-        // could add more logic to append to cache
+        onMessage?.(payload)
       } catch (err) {
         // ignore
       }
     })
     return () => es.close()
-  }, [userId, qc])
+  }, [userId, qc, onMessage])
 }

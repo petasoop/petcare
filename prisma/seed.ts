@@ -4,172 +4,151 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const salt = await bcrypt.genSalt(10)
-
-  const adminPass = await bcrypt.hash('Admin123!', salt)
-  const dokterPass = await bcrypt.hash('Dokter123!', salt)
-  const pelangganPass = await bcrypt.hash('Pelanggan123!', salt)
+  const password = {
+    admin: await bcrypt.hash('Admin123!', 10),
+    dokter: await bcrypt.hash('Dokter123!', 10),
+    pelanggan: await bcrypt.hash('Pelanggan123!', 10),
+  }
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@klinik.com' },
-    update: {},
-    create: {
-      name: 'Admin Klinik',
-      email: 'admin@klinik.com',
-      password: adminPass,
-      role: 'ADMIN',
-      phone: '081234567890'
-    }
+    where: { id: 'seed-admin' },
+    update: { name: 'Admin Klinik', email: 'admin@klinik.com', password: password.admin, role: 'ADMIN', phone: '081234567890' },
+    create: { id: 'seed-admin', name: 'Admin Klinik', email: 'admin@klinik.com', password: password.admin, role: 'ADMIN', phone: '081234567890' },
   })
 
   const dokter1 = await prisma.user.upsert({
-    where: { email: 'dokter1@klinik.com' },
-    update: {},
-    create: {
-      name: 'Dr. Budi',
-      email: 'dokter1@klinik.com',
-      password: dokterPass,
-      role: 'DOKTER',
-      phone: '081111111111'
-    }
+    where: { id: 'seed-dokter-1' },
+    update: { name: 'Dr. Budi', email: 'dokter1@klinik.com', password: password.dokter, role: 'DOKTER', phone: '081111111111' },
+    create: { id: 'seed-dokter-1', name: 'Dr. Budi', email: 'dokter1@klinik.com', password: password.dokter, role: 'DOKTER', phone: '081111111111' },
   })
 
   const dokter2 = await prisma.user.upsert({
-    where: { email: 'dokter2@klinik.com' },
-    update: {},
-    create: {
-      name: 'Dr. Siti',
-      email: 'dokter2@klinik.com',
-      password: dokterPass,
-      role: 'DOKTER',
-      phone: '082222222222'
-    }
+    where: { id: 'seed-dokter-2' },
+    update: { name: 'Dr. Siti', email: 'dokter2@klinik.com', password: password.dokter, role: 'DOKTER', phone: '082222222222' },
+    create: { id: 'seed-dokter-2', name: 'Dr. Siti', email: 'dokter2@klinik.com', password: password.dokter, role: 'DOKTER', phone: '082222222222' },
   })
 
   const pelanggan1 = await prisma.user.upsert({
-    where: { email: 'pelanggan1@klinik.com' },
-    update: {},
-    create: {
-      name: 'Andi',
-      email: 'pelanggan1@klinik.com',
-      password: pelangganPass,
-      role: 'PELANGGAN',
-      phone: '083333333333'
-    }
+    where: { id: 'seed-pelanggan-1' },
+    update: { name: 'Andi', email: 'pelanggan1@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083333333333' },
+    create: { id: 'seed-pelanggan-1', name: 'Andi', email: 'pelanggan1@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083333333333' },
   })
 
   const pelanggan2 = await prisma.user.upsert({
-    where: { email: 'pelanggan2@klinik.com' },
-    update: {},
-    create: {
-      name: 'Bina',
-      email: 'pelanggan2@klinik.com',
-      password: pelangganPass,
-      role: 'PELANGGAN',
-      phone: '083444444444'
-    }
+    where: { id: 'seed-pelanggan-2' },
+    update: { name: 'Bina', email: 'pelanggan2@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083444444444' },
+    create: { id: 'seed-pelanggan-2', name: 'Bina', email: 'pelanggan2@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083444444444' },
   })
 
   const pelanggan3 = await prisma.user.upsert({
-    where: { email: 'pelanggan3@klinik.com' },
-    update: {},
+    where: { id: 'seed-pelanggan-3' },
+    update: { name: 'Cici', email: 'pelanggan3@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083555555555' },
+    create: { id: 'seed-pelanggan-3', name: 'Cici', email: 'pelanggan3@klinik.com', password: password.pelanggan, role: 'PELANGGAN', phone: '083555555555' },
+  })
+
+  const hewan1 = await prisma.hewan.upsert({
+    where: { id: 'seed-hewan-1' },
+    update: { nama: 'Milo', jenis: 'ANJING', ras: 'Labrador', tanggalLahir: new Date('2020-06-01'), beratBadan: 25.5, pelangganId: pelanggan1.id },
+    create: { id: 'seed-hewan-1', nama: 'Milo', jenis: 'ANJING', ras: 'Labrador', tanggalLahir: new Date('2020-06-01'), beratBadan: 25.5, pelangganId: pelanggan1.id },
+  })
+
+  const hewan2 = await prisma.hewan.upsert({
+    where: { id: 'seed-hewan-2' },
+    update: { nama: 'Kitty', jenis: 'KUCING', ras: 'Persia', tanggalLahir: new Date('2021-03-10'), beratBadan: 4.2, pelangganId: pelanggan2.id },
+    create: { id: 'seed-hewan-2', nama: 'Kitty', jenis: 'KUCING', ras: 'Persia', tanggalLahir: new Date('2021-03-10'), beratBadan: 4.2, pelangganId: pelanggan2.id },
+  })
+
+  await prisma.appointment.upsert({
+    where: { id: 'seed-appointment-1' },
+    update: {
+      pelangganId: pelanggan1.id,
+      hewanId: hewan1.id,
+      dokterId: dokter1.id,
+      tanggal: new Date('2026-06-09T00:00:00.000Z'),
+      waktu: '09:00',
+      jenis: 'PEMERIKSAAN',
+      keluhan: 'Batuk dan bersin',
+    },
     create: {
-      name: 'Cici',
-      email: 'pelanggan3@klinik.com',
-      password: pelangganPass,
-      role: 'PELANGGAN',
-      phone: '083555555555'
-    }
+      id: 'seed-appointment-1',
+      pelangganId: pelanggan1.id,
+      hewanId: hewan1.id,
+      dokterId: dokter1.id,
+      tanggal: new Date('2026-06-09T00:00:00.000Z'),
+      waktu: '09:00',
+      jenis: 'PEMERIKSAAN',
+      keluhan: 'Batuk dan bersin',
+    },
   })
 
-  // sample pets
-  const hewan1 = await prisma.hewan.create({
-    data: {
-      nama: 'Milo',
-      jenis: 'ANJING',
-      ras: 'Labrador',
-      tanggalLahir: new Date('2020-06-01'),
-      beratBadan: 25.5,
-      pelangganId: pelanggan1.id
-    }
+  await prisma.appointment.upsert({
+    where: { id: 'seed-appointment-2' },
+    update: {
+      pelangganId: pelanggan2.id,
+      hewanId: hewan2.id,
+      dokterId: dokter2.id,
+      tanggal: new Date('2026-06-09T00:00:00.000Z'),
+      waktu: '11:00',
+      jenis: 'VAKSINASI',
+      keluhan: 'Vaksin tahunan',
+    },
+    create: {
+      id: 'seed-appointment-2',
+      pelangganId: pelanggan2.id,
+      hewanId: hewan2.id,
+      dokterId: dokter2.id,
+      tanggal: new Date('2026-06-09T00:00:00.000Z'),
+      waktu: '11:00',
+      jenis: 'VAKSINASI',
+      keluhan: 'Vaksin tahunan',
+    },
   })
 
-  const hewan2 = await prisma.hewan.create({
-    data: {
-      nama: 'Kitty',
-      jenis: 'KUCING',
-      ras: 'Persia',
-      tanggalLahir: new Date('2021-03-10'),
-      beratBadan: 4.2,
-      pelangganId: pelanggan2.id
-    }
+  await prisma.jadwalDokter.upsert({
+    where: { id: 'seed-jadwal-1' },
+    update: { dokterId: dokter1.id, hari: 'SENIN', jamMulai: '08:00', jamSelesai: '12:00', isAktif: true },
+    create: { id: 'seed-jadwal-1', dokterId: dokter1.id, hari: 'SENIN', jamMulai: '08:00', jamSelesai: '12:00', isAktif: true },
   })
 
-  // sample appointments
-  await prisma.appointment.createMany({
-    data: [
-      {
-        pelangganId: pelanggan1.id,
-        hewanId: hewan1.id,
-        dokterId: dokter1.id,
-        tanggal: new Date(),
-        waktu: '09:00',
-        jenis: 'PEMERIKSAAN',
-        keluhan: 'Batuk dan bersin'
-      },
-      {
-        pelangganId: pelanggan2.id,
-        hewanId: hewan2.id,
-        dokterId: dokter2.id,
-        tanggal: new Date(),
-        waktu: '11:00',
-        jenis: 'VAKSINASI',
-        keluhan: 'Vaksin tahunan'
-      }
-    ]
+  await prisma.jadwalDokter.upsert({
+    where: { id: 'seed-jadwal-2' },
+    update: { dokterId: dokter2.id, hari: 'SELASA', jamMulai: '13:00', jamSelesai: '17:00', isAktif: true },
+    create: { id: 'seed-jadwal-2', dokterId: dokter2.id, hari: 'SELASA', jamMulai: '13:00', jamSelesai: '17:00', isAktif: true },
   })
 
-  // jadwal dokter
-  await prisma.jadwalDokter.createMany({
-    data: [
-      {
-        dokterId: dokter1.id,
-        hari: 'SENIN',
-        jamMulai: '08:00',
-        jamSelesai: '12:00'
-      },
-      {
-        dokterId: dokter2.id,
-        hari: 'SELASA',
-        jamMulai: '13:00',
-        jamSelesai: '17:00'
-      }
-    ]
+  await prisma.inventory.upsert({
+    where: { id: 'seed-inventory-1' },
+    update: { namaItem: 'Paracetamol', kategori: 'OBAT', stok: 100, satuan: 'tablet', harga: 5000, stokMinimal: 10 },
+    create: { id: 'seed-inventory-1', namaItem: 'Paracetamol', kategori: 'OBAT', stok: 100, satuan: 'tablet', harga: 5000, stokMinimal: 10 },
   })
 
-  // inventory
-  await prisma.inventory.createMany({
-    data: [
-      { namaItem: 'Paracetamol', kategori: 'OBAT', stok: 100, satuan: 'tablet', harga: 5000, stokMinimal: 10 },
-      { namaItem: 'Sarung Tangan', kategori: 'KONSUMABLE', stok: 200, satuan: 'pcs', harga: 2000, stokMinimal: 20 }
-    ]
+  await prisma.inventory.upsert({
+    where: { id: 'seed-inventory-2' },
+    update: { namaItem: 'Sarung Tangan', kategori: 'KONSUMABLE', stok: 200, satuan: 'pcs', harga: 2000, stokMinimal: 20 },
+    create: { id: 'seed-inventory-2', namaItem: 'Sarung Tangan', kategori: 'KONSUMABLE', stok: 200, satuan: 'pcs', harga: 2000, stokMinimal: 20 },
   })
 
-  // artikel
-  await prisma.artikel.create({
-    data: {
+  await prisma.artikel.upsert({
+    where: { id: 'seed-artikel-1' },
+    update: {
       judul: 'Cara Merawat Kucing Anggora',
       slug: 'cara-merawat-kucing-anggora',
       konten: 'Konten contoh artikel tentang perawatan kucing Anggora.',
-      isPublished: true
-    }
+      isPublished: true,
+    },
+    create: {
+      id: 'seed-artikel-1',
+      judul: 'Cara Merawat Kucing Anggora',
+      slug: 'cara-merawat-kucing-anggora',
+      konten: 'Konten contoh artikel tentang perawatan kucing Anggora.',
+      isPublished: true,
+    },
   })
 
-  // konten landing
-  await prisma.kontenLanding.createMany({
-    data: [
-      { section: 'hero', key: 'tagline', value: 'Kesehatan Hewan Peliharaan Anda, Prioritas Kami' }
-    ]
+  await prisma.kontenLanding.upsert({
+    where: { id: 'seed-landing-hero-tagline' },
+    update: { section: 'hero', key: 'tagline', value: 'Kesehatan Hewan Peliharaan Anda, Prioritas Kami' },
+    create: { id: 'seed-landing-hero-tagline', section: 'hero', key: 'tagline', value: 'Kesehatan Hewan Peliharaan Anda, Prioritas Kami' },
   })
 
   console.log({ admin: admin.email, dokter1: dokter1.email, pelanggan1: pelanggan1.email })

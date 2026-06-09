@@ -28,22 +28,12 @@ export default function Chat({ userId, peerId, appointmentId }: { userId: string
     load()
   }, [peerId, appointmentId])
 
-  useSSE(userId)
-
-  useEffect(() => {
-    const es = new EventSource(`/api/konsultasi/sse?userId=${userId}`)
-    es.addEventListener('message', (e: any) => {
-      try {
-        const payload = JSON.parse(e.data)
-        // append if relevant
-        if (!peerId || payload.senderId === peerId || payload.receiverId === peerId) {
-          setMessages((m) => [...m, payload])
-          scrollBottom()
-        }
-      } catch (err) {}
-    })
-    return () => es.close()
-  }, [userId, peerId])
+  useSSE(userId, (payload) => {
+    if (!peerId || payload.senderId === peerId || payload.receiverId === peerId) {
+      setMessages((m) => [...m, payload])
+      scrollBottom()
+    }
+  })
 
   function scrollBottom() {
     setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }), 50)

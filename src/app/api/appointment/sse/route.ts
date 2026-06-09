@@ -1,15 +1,10 @@
-import { sseService } from '../../../../lib/sse'
-import { getApiToken, getTokenUserId, unauthorized } from '@/lib/api-auth'
+import { getApiToken, unauthorized } from '@/lib/api-auth'
+import { sseService } from '@/lib/sse'
 
 export async function GET(req: Request) {
   const token = await getApiToken(req)
   if (!token) return unauthorized()
-
-  const url = new URL(req.url)
-  const requestedUserId = url.searchParams.get('userId')
-  if (requestedUserId === 'global' && token.role !== 'ADMIN') return unauthorized()
-
-  const userId = requestedUserId === 'global' ? 'global' : getTokenUserId(token)
+  if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return unauthorized()
 
   let controller: ReadableStreamDefaultController | null = null
   const cleanupFns: Array<() => void> = []
@@ -29,10 +24,9 @@ export async function GET(req: Request) {
   const stream = new ReadableStream({
     start(c) {
       controller = c
-      const channel = userId === 'global' ? 'message:global' : `message:${userId}`
-      const unsubscribe = sseService.subscribe(channel, (payload) => {
+      const unsubscribe = sseService.subscribe('queue:update', (payload) => {
         try {
-          controller?.enqueue(encodeEvent({ event: 'message', data: payload }))
+          controller?.enqueue(encodeEvent({ event: 'queue:update', data: payload }))
         } catch {}
       })
       cleanupFns.push(unsubscribe)
@@ -61,10 +55,10 @@ export async function GET(req: Request) {
 }
 
 function encodeEvent(event: { event?: string; data: any }) {
-  const lines = []
+  const lines: string[] = []
   if (event.event) lines.push(`event: ${event.event}`)
   const payload = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
-  payload.split('\n').forEach((line: string) => lines.push(`data: ${line}`))
-  lines.push('\n')
+  payload.split('\n').forEach((line) => lines.push(`data: ${line}`))
+  lines.push('')
   return new TextEncoder().encode(lines.join('\n'))
 }
