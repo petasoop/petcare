@@ -8,14 +8,14 @@ export default function RekamMedisClient({ hewanId }: { hewanId: string }) {
   const { query, create, downloadPdf } = useRekamMedis(hewanId)
   const { data: doctorsData } = useDoctors()
   const doctors = doctorsData || []
-  const [form, setForm] = useState({ tanggalPeriksa: '', dokterId: '', keluhan: '', diagnosa: '', tindakan: '', resep: '' })
+  const [form, setForm] = useState({ tanggalPeriksa: '', dokterId: '', keluhan: '', diagnosis: '', tindakan: '', resep: '', catatanDokter: '' })
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       await create.mutateAsync({ ...form, hewanId, tanggalPeriksa: form.tanggalPeriksa })
       toast('Rekam medis berhasil disimpan')
-      setForm({ tanggalPeriksa: '', dokterId: '', keluhan: '', diagnosa: '', tindakan: '', resep: '' })
+      setForm({ tanggalPeriksa: '', dokterId: '', keluhan: '', diagnosis: '', tindakan: '', resep: '', catatanDokter: '' })
     } catch (err: any) {
       toast(err.message || 'Gagal menyimpan rekam medis')
     }
@@ -45,7 +45,7 @@ export default function RekamMedisClient({ hewanId }: { hewanId: string }) {
           </div>
           <div>
             <label className="block text-sm">Diagnosa</label>
-            <input value={form.diagnosa} onChange={(e) => setForm({ ...form, diagnosa: e.target.value })} className="border p-2 rounded w-full" />
+            <input value={form.diagnosis} onChange={(e) => setForm({ ...form, diagnosis: e.target.value })} className="border p-2 rounded w-full" />
           </div>
           <div>
             <label className="block text-sm">Tindakan</label>
@@ -54,6 +54,10 @@ export default function RekamMedisClient({ hewanId }: { hewanId: string }) {
           <div>
             <label className="block text-sm">Resep</label>
             <input value={form.resep} onChange={(e) => setForm({ ...form, resep: e.target.value })} className="border p-2 rounded w-full" />
+          </div>
+          <div>
+            <label className="block text-sm">Catatan Dokter</label>
+            <input value={form.catatanDokter || ''} onChange={(e) => setForm({ ...form, catatanDokter: e.target.value })} className="border p-2 rounded w-full" />
           </div>
           <div>
             <button type="submit" className="px-3 py-2 bg-teal-600 text-white rounded">Simpan</button>

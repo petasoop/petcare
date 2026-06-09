@@ -12,7 +12,7 @@ const NAV_LINKS: Record<string, { label: string; href: string }[]> = {
   DOKTER: [
     { label: 'Dashboard', href: '/dashboard/dokter' },
     { label: 'Antrian', href: '/dashboard/dokter' },
-    { label: 'Rekam Medis', href: '/dashboard/pelanggan/hewan' },
+    { label: 'Rekam Medis', href: '/dashboard/dokter' },
   ],
   PELANGGAN: [
     { label: 'Dashboard', href: '/dashboard/pelanggan' },
