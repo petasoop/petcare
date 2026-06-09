@@ -21,7 +21,7 @@ export default function StaffInventoryPage() {
   const movements = (movementsQuery.query.data as { data: any[] } | undefined)?.data || []
 
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<InventoryInput>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(inventorySchema),
     defaultValues: { namaItem: '', kategori: 'OBAT', stok: 0, satuan: '', harga: 0, stokMinimal: 0 },
   })
