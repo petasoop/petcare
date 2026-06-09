@@ -7,6 +7,7 @@ import { forbidden, getCurrentUserWithRole, getTokenUserId, notFound, unauthoriz
 const updateSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
+  phone: z.string().optional(),
   role: z.enum(['ADMIN', 'STAFF', 'DOKTER', 'CLIENT']).optional(),
   password: z.string().min(6).optional(),
 })

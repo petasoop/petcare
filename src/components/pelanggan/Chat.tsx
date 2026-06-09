@@ -10,10 +10,26 @@ type Message = {
   createdAt: string
 }
 
-export default function Chat({ userId, peerId, appointmentId }: { userId: string; peerId?: string; appointmentId?: string }) {
+export default function Chat({ userId, peerId, appointmentId }: { userId?: string; peerId?: string; appointmentId?: string }) {
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(userId)
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
+  const [loadingUser, setLoadingUser] = useState(false)
   const listRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (currentUserId) return
+    async function loadUser() {
+      setLoadingUser(true)
+      const res = await fetch('/api/users/me')
+      if (res.ok) {
+        const json = await res.json()
+        setCurrentUserId(json.user?.id)
+      }
+      setLoadingUser(false)
+    }
+    loadUser()
+  }, [currentUserId])
 
   useEffect(() => {
     async function load() {
@@ -28,7 +44,7 @@ export default function Chat({ userId, peerId, appointmentId }: { userId: string
     load()
   }, [peerId, appointmentId])
 
-  useSSE(userId, (payload) => {
+  useSSE(currentUserId, (payload) => {
     if (!peerId || payload.senderId === peerId || payload.receiverId === peerId) {
       setMessages((m) => [...m, payload])
       scrollBottom()
@@ -40,19 +56,27 @@ export default function Chat({ userId, peerId, appointmentId }: { userId: string
   }
 
   async function send() {
-    if (!text.trim()) return
-    const body = { senderId: userId, receiverId: peerId, appointmentId, isi: text }
+    if (!text.trim() || !currentUserId) return
+    const body = { senderId: currentUserId, receiverId: peerId, appointmentId, isi: text }
     const res = await fetch('/api/konsultasi', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
     if (res.ok) {
       setText('')
     }
   }
 
+  if (loadingUser) {
+    return <div className="rounded-xl bg-white p-4 text-sm text-slate-500">Memuat konsultasi...</div>
+  }
+
+  if (!currentUserId) {
+    return <div className="rounded-xl bg-white p-4 text-sm text-slate-500">Tidak dapat memuat chat tanpa user yang valid.</div>
+  }
+
   return (
     <div className="border rounded p-2 bg-white max-w-2xl">
       <div ref={listRef} className="h-64 overflow-auto p-2 space-y-2">
         {messages.map((m) => (
-          <div key={m.id} className={`p-2 rounded ${m.senderId === userId ? 'bg-teal-50 self-end' : 'bg-gray-100'}`}>
+          <div key={m.id} className={`p-2 rounded ${m.senderId === currentUserId ? 'bg-teal-50 self-end' : 'bg-gray-100'}`}>
             <div className="text-sm">{m.isi}</div>
             <div className="text-xs text-gray-400">{new Date(m.createdAt).toLocaleString()}</div>
           </div>

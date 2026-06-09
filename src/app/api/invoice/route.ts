@@ -3,8 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, unauthorized } from '@/lib/api-auth'
 
-const db = prisma as any
-
 const invoiceItemSchema = z.object({
   inventoryId: z.string().optional(),
   namaItem: z.string().min(1),
@@ -18,8 +16,15 @@ const createSchema = z.object({
   items: z.array(invoiceItemSchema).min(1),
 })
 
-function generateInvoiceNumber() {
-  return `INV-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 9000 + 1000)}`
+async function generateInvoiceNumber() {
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const randomSuffix = () => Math.floor(Math.random() * 9000 + 1000).toString()
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const invoiceNumber = `INV-${datePart}-${randomSuffix()}`
+    const existing = await prisma.invoice.findUnique({ where: { invoiceNumber } })
+    if (!existing) return invoiceNumber
+  }
+  throw new Error('Unable to generate unique invoice number')
 }
 
 export async function GET(req: Request) {
@@ -30,7 +35,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url)
     const status = url.searchParams.get('status') as string | null
-    const invoices = await db.invoice.findMany({
+    const invoices = await prisma.invoice.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
       include: { customer: true, hewan: true, approvedBy: true, printedBy: true, items: true },
@@ -52,9 +57,9 @@ export async function POST(req: Request) {
     const parsed = createSchema.parse(body)
     const total = parsed.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
 
-    const created = await db.invoice.create({
+    const created = await prisma.invoice.create({
       data: {
-        invoiceNumber: generateInvoiceNumber(),
+        invoiceNumber: await generateInvoiceNumber(),
         customerId: parsed.customerId,
         hewanId: parsed.hewanId,
         total,

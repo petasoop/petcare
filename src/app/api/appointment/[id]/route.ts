@@ -15,8 +15,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!item) return notFound()
 
     const userId = getTokenUserId(token)
-    if (token.role !== 'ADMIN' && token.role !== 'DOKTER' && token.role !== 'STAFF' && item.pelangganId !== userId) return forbidden()
-    if (token.role === 'DOKTER' && item.dokterId !== userId && item.pelangganId !== userId) return forbidden()
+    if (token.role === 'ADMIN' || token.role === 'STAFF') return NextResponse.json(item)
+    if (token.role === 'DOKTER' && item.dokterId !== userId && item.dokterId !== null && item.pelangganId !== userId) return forbidden()
+    if (token.role === 'CLIENT' && item.pelangganId !== userId) return forbidden()
 
     return NextResponse.json(item)
   } catch (err) {
@@ -37,10 +38,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const parsed = updateSchema.parse(body)
     // allow DOKTER or ADMIN to update appointment
     const userId = getTokenUserId(token)
-    if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
-    if (token.role === 'DOKTER' && item.dokterId !== userId) return forbidden()
+    if (token.role !== 'ADMIN' && token.role !== 'STAFF' && token.role !== 'DOKTER') return forbidden()
+    if (token.role === 'DOKTER' && item.dokterId !== userId && item.dokterId !== null) return forbidden()
 
-    const updated = await prisma.appointment.update({ where: { id }, data: parsed as any })
+    const updated = await prisma.appointment.update({ where: { id }, data: parsed })
 
     // publish queue update via SSE
     try {

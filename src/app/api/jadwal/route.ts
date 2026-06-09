@@ -14,9 +14,11 @@ export async function GET(req: Request) {
     const dokterId = url.searchParams.get('dokterId')
     const where: any = {}
 
-    if (token.role === 'ADMIN' || token.role === 'DOKTER') {
+    if (token.role === 'ADMIN') {
       if (dokterId) where.dokterId = dokterId
-      if (token.role === 'DOKTER' && !dokterId) where.dokterId = getTokenUserId(token)
+    } else if (token.role === 'DOKTER') {
+      if (dokterId && dokterId !== getTokenUserId(token)) return forbidden()
+      where.dokterId = getTokenUserId(token)
     } else {
       return forbidden()
     }
@@ -32,10 +34,14 @@ export async function POST(req: Request) {
   try {
     const token = await getApiToken(req)
     if (!token) return unauthorized()
-    if (token.role !== 'ADMIN') return forbidden()
+    if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
 
     const body = await req.json()
     const parsed = createSchema.parse(body)
+    if (token.role === 'DOKTER') {
+      if (!parsed.dokterId || parsed.dokterId !== getTokenUserId(token)) return forbidden()
+    }
+
     const created = await prisma.jadwalDokter.create({ data: parsed as any })
     return NextResponse.json(created, { status: 201 })
   } catch (err: any) {

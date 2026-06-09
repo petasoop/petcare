@@ -1,7 +1,8 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,8 +18,17 @@ type FormData = z.infer<typeof schema>
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const { register, handleSubmit, formState } = useForm<FormData>({ resolver: zodResolver(schema) })
+
+  useEffect(() => {
+    if (session?.user?.role) {
+      const role = session.user.role
+      const dest = role === 'ADMIN' ? '/dashboard/admin' : role === 'DOKTER' ? '/dashboard/dokter' : role === 'STAFF' ? '/dashboard/staff' : '/dashboard/pelanggan'
+      router.replace(dest)
+    }
+  }, [router, session])
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)

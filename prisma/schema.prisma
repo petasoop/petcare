@@ -242,6 +242,9 @@ model Invoice {
   items         InvoiceItem[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+  @@index([customerId])
 }
 
 model InvoiceItem {
@@ -254,6 +257,9 @@ model InvoiceItem {
   quantity    Int
   unitPrice   Float
   subTotal    Float
+
+  @@index([invoiceId])
+  @@index([inventoryId])
 }
 
 enum InvoiceStatus {

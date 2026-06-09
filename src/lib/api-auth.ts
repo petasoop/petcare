@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { auth } from '@/auth'
 
 export type ApiRole = 'ADMIN' | 'STAFF' | 'DOKTER' | 'CLIENT'
 
@@ -14,15 +14,31 @@ export type ApiToken = {
 
 export function normalizeRole(role?: string | null): ApiRole | undefined {
   if (!role) return undefined
-  if (role === 'PELANGGAN') return 'CLIENT'
   if (role === 'CLIENT' || role === 'ADMIN' || role === 'STAFF' || role === 'DOKTER') return role as ApiRole
   return undefined
 }
 
 export async function getApiToken(req: Request) {
-  const token = (await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })) as ApiToken | null
-  if (!token) return null
-  return { ...token, role: normalizeRole(token.role) }
+  const session = await auth()
+  if (!session?.user) return null
+
+  return {
+    id: session.user.id as string,
+    role: normalizeRole((session.user as any).role),
+    name: session.user.name ?? undefined,
+    email: session.user.email ?? undefined,
+    avatar: (session.user as any).avatar ?? undefined,
+  }
+}
+
+export async function getCurrentUser(req: Request) {
+  const token = await getApiToken(req)
+  if (!token || !token.id || !token.role || !token.email) return null
+  return {
+    id: token.id,
+    role: token.role,
+    email: token.email,
+  }
 }
 
 export async function getCurrentUserWithRole(req: Request) {

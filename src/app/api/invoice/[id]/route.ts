@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, notFound, unauthorized } from '@/lib/api-auth'
-
-const db = prisma as any
 
 const updateSchema = z.object({
   customerId: z.string().optional(),
@@ -23,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!token) return unauthorized()
     if (token.role !== 'ADMIN' && token.role !== 'STAFF') return forbidden()
 
-    const invoice = await db.invoice.findUnique({
+    const invoice = await prisma.invoice.findUnique({
       where: { id: params.id },
       include: { customer: true, hewan: true, approvedBy: true, printedBy: true, items: true },
     })
@@ -47,7 +46,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const body = await req.json()
     const parsed = updateSchema.parse(body)
-    const data: any = {}
+    const data: Prisma.InvoiceUpdateInput = {}
 
     if (parsed.customerId) data.customerId = parsed.customerId
     if (parsed.hewanId !== undefined) data.hewanId = parsed.hewanId
@@ -68,7 +67,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       }
     }
 
-    const updated = await db.invoice.update({
+    const updated = await prisma.invoice.update({
       where: { id: params.id },
       data,
       include: { items: true },

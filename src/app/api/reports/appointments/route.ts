@@ -6,14 +6,21 @@ import { forbidden, getApiToken, unauthorized } from '@/lib/api-auth'
 export async function GET(req: Request) {
   const token = await getApiToken(req)
   if (!token) return unauthorized()
-  if (token.role !== 'ADMIN' && token.role !== 'DOKTER') return forbidden()
 
   const url = new URL(req.url)
   const format = url.searchParams.get('format') || 'pdf'
+  const pelangganId = url.searchParams.get('pelangganId')
+
+  if (token.role === 'CLIENT') {
+    if (pelangganId && pelangganId !== (token as any).id) return forbidden()
+  } else if (token.role !== 'ADMIN' && token.role !== 'DOKTER') {
+    return forbidden()
+  }
+
   try {
-    const appointments = await prisma.appointment.findMany({ include: { hewan: true, pelanggan: true, dokter: true } })
+    const where = token.role === 'CLIENT' ? { pelangganId: pelangganId || (token as any).id } : undefined
+    const appointments = await prisma.appointment.findMany({ where, include: { hewan: true, pelanggan: true, dokter: true } })
     if (format === 'xlsx') {
-      // return JSON for now; client can call XLSX export endpoint
       return NextResponse.json({ data: appointments })
     }
 

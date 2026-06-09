@@ -1,15 +1,10 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import AdminJadwalManager from '@/components/dashboard/admin/AdminJadwalManager'
 
 export default async function AdminJadwalDokterPage() {
   const session = await auth()
   if (!session || (session.user as any)?.role !== 'ADMIN') redirect('/dashboard')
-
-  const schedules = await prisma.jadwalDokter.findMany({
-    include: { dokter: true },
-    orderBy: [{ dokterId: 'asc' }, { createdAt: 'desc' }],
-  })
 
   return (
     <div>

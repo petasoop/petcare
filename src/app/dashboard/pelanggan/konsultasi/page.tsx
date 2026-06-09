@@ -16,9 +16,9 @@ export default async function KonsultasiPage() {
   return (
     <div>
       <h2 className="text-2xl font-semibold text-teal-700">Konsultasi</h2>
+      <p className="mt-1 text-sm text-slate-500">Chat langsung dengan klinik untuk pertanyaan atau tindak lanjut.</p>
       <div className="mt-4">
-        {/* If server session not available, Chat will still work if userId provided via client */}
-        <Chat userId={userId || ''} />
+        <Chat userId={userId} />
       </div>
     </div>
   )

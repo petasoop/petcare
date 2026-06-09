@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forbidden, getCurrentUserWithRole, notFound, unauthorized } from '@/lib/api-auth'
-
-const db = prisma as any
 const voidSchema = z.object({ voidReason: z.string().min(1) })
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
@@ -12,14 +10,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (!token) return unauthorized()
     if (token.role !== 'ADMIN') return forbidden()
 
-    const invoice = await db.invoice.findUnique({ where: { id: params.id }, select: { status: true } })
+    const invoice = await prisma.invoice.findUnique({ where: { id: params.id }, select: { status: true } })
     if (!invoice) return notFound()
-    if (invoice.status === 'VOID') return NextResponse.json({ message: 'Invoice already voided' }, { status: 400 })
+    if (invoice.status === 'VOID' || invoice.status === 'PRINTED') return NextResponse.json({ message: 'Invoice cannot be voided after printing' }, { status: 400 })
 
     const body = await req.json()
     const parsed = voidSchema.parse(body)
 
-    const updated = await db.invoice.update({
+    const updated = await prisma.invoice.update({
       where: { id: params.id },
       data: { status: 'VOID', voidReason: parsed.voidReason },
       include: { customer: true, hewan: true, approvedBy: true, printedBy: true, items: true },
