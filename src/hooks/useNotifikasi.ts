@@ -12,14 +12,18 @@ export function useNotifikasi(userId?: string) {
   })
 }
 
-export function useMarkRead() {
+export function useMarkRead(userId?: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/notifikasi/${id}`, { method: 'PATCH' })
+      const res = await fetch(`/api/notifikasi/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isRead: true }),
+        headers: { 'Content-Type': 'application/json' },
+      })
       if (!res.ok) throw new Error('Error marking read')
       return res.json()
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifikasi'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifikasi', userId] }),
   })
 }

@@ -1,6 +1,7 @@
 "use client"
 import React from 'react'
 import { signOut, useSession } from 'next-auth/react'
+import NotificationBell from '@/components/shared/NotificationBell'
 
 export default function Navbar({ title }: { title?: string }) {
   const { data: session } = useSession()
@@ -13,10 +14,7 @@ export default function Navbar({ title }: { title?: string }) {
         <p className="text-sm text-slate-500">Halo, {userName}</p>
       </div>
       <div className="flex items-center space-x-4">
-        <button type="button" aria-label="notifications" className="relative">
-          <span className="w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1" />
-          🔔
-        </button>
+        <NotificationBell />
         <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="text-sm text-slate-700 hover:text-teal-700">
           Logout
         </button>

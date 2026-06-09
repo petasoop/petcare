@@ -1,31 +1,58 @@
 "use client"
-import React, { useEffect, useState } from 'react'
-import useSWR from 'swr'
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+import React, { useMemo, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useNotifikasi, useMarkRead } from '@/hooks/useNotifikasi'
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)
-  const { data: me } = useSWR('/api/users/me', fetcher)
-  const userId = me?.user?.id
-  const { data } = useSWR(() => (userId ? `/api/notifikasi?userId=${userId}` : null), fetcher)
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id
+  const { data, isLoading } = useNotifikasi(userId)
+  const markRead = useMarkRead(userId)
+
+  const notifications = data?.data || []
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length
+
+  const toggleOpen = () => setOpen((value) => !value)
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen((v) => !v)} className="relative">
+      <button onClick={toggleOpen} className="relative px-3 py-2 bg-white border rounded-full hover:bg-slate-50">
         🔔
-        {data?.data?.filter((n: any) => !n.isRead).length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />}
+        {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border rounded shadow p-2">
-          <div className="text-sm font-medium mb-2">Notifikasi</div>
-          <div className="space-y-2 max-h-64 overflow-auto">
-            {data?.data?.length ? data.data.map((n: any) => (
-              <div key={n.id} className={`p-2 rounded ${n.isRead ? 'bg-white' : 'bg-teal-50'}`}>
-                <div className="font-semibold">{n.judul}</div>
-                <div className="text-xs text-gray-600">{n.isRead ? '' : 'Baru'}</div>
-              </div>
-            )) : <div className="text-sm text-gray-500 p-2">Tidak ada notifikasi</div>}
+        <div className="absolute right-0 mt-2 w-96 bg-white border rounded shadow p-3 z-50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-medium">Notifikasi</div>
+            <button
+              onClick={async () => {
+                await Promise.all(notifications.filter((n: any) => !n.isRead).map((n: any) => markRead.mutateAsync(n.id)))
+              }}
+              disabled={markRead.status === 'pending' || unreadCount === 0}
+              className="text-xs text-teal-600 hover:underline disabled:text-slate-300"
+            >
+              Tandai semua dibaca
+            </button>
+          </div>
+          <div className="space-y-2 max-h-72 overflow-auto">
+            {isLoading ? (
+              <div className="text-sm text-gray-500">Memuat...</div>
+            ) : notifications.length ? (
+              notifications.map((n: any) => (
+                <button
+                  key={n.id}
+                  onClick={() => markRead.mutateAsync(n.id)}
+                  className={`w-full text-left p-2 rounded ${n.isRead ? 'bg-white' : 'bg-teal-50 hover:bg-teal-100'}`}
+                >
+                  <div className="font-semibold">{n.judul}</div>
+                  <div className="text-xs text-gray-600">{n.isRead ? 'Telah dibaca' : 'Baru'}</div>
+                  <div className="text-sm text-slate-600 mt-1">{n.isi}</div>
+                </button>
+              ))
+            ) : (
+              <div className="text-sm text-gray-500">Tidak ada notifikasi</div>
+            )}
           </div>
         </div>
       )}
